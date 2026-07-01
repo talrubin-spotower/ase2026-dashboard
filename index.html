@@ -810,6 +810,42 @@ const SEED_EVENTS = [
    location:'ASE 2026, New York',
    attendees:['tm-yali'],
    agenda:'🥗 Lunch · 12:30–13:30\nGoal: Strengthen the partnership'},
+
+  // ── 25 JUL · YANIV BEN DAVID + YANIV FRIEDMAN · Outbound ──
+  {id:'fly-25jul-ybd-yf-lo152', type:'travel', partner:'LO152 · TLV → WAW',
+   date:'2026-07-25', time:'05:05',
+   location:'Ben Gurion Intl (TLV) T3 → Warsaw Chopin (WAW)',
+   attendees:['tm-yanivbd','tm-yanivf'],
+   agenda:'✈️ LOT Polish Airlines LO152\n4h 05m · Nonstop\nDeparts 05:05 TLV → Arrives 08:10 WAW\nYaniv BD Ref: Z4MYCB · Yaniv F Ref: Z4DRPD'},
+  {id:'fly-25jul-ybd-yf-lo6', type:'travel', partner:'LO6 · WAW → JFK',
+   date:'2026-07-25', time:'12:10',
+   location:'Warsaw Chopin (WAW) → John F. Kennedy Intl (JFK) T1',
+   attendees:['tm-yanivbd','tm-yanivf'],
+   agenda:'✈️ LOT Polish Airlines LO6\n9h 30m · Nonstop\nDeparts 12:10 WAW → Arrives 15:40 JFK\nYaniv BD Ref: Z4MYCB · Yaniv F Ref: Z4DRPD'},
+
+  // ── 06–07 AUG · YANIV FRIEDMAN · Return via LAX ──
+  {id:'fly-06aug-yf-lo24', type:'travel', partner:'LO24 · LAX → WAW',
+   date:'2026-08-06', time:'22:05',
+   location:'Los Angeles Intl (LAX) T B → Warsaw Chopin (WAW)',
+   attendees:['tm-yanivf'],
+   agenda:'✈️ LOT Polish Airlines LO24\n11h 35m · Nonstop\nDeparts 22:05 LAX → Arrives 18:40+1 WAW (7 Aug)\nRef: Z4DRPD'},
+  {id:'fly-07aug-yf-lo151', type:'travel', partner:'LO151 · WAW → TLV',
+   date:'2026-08-07', time:'23:00',
+   location:'Warsaw Chopin (WAW) → Ben Gurion Intl (TLV) T3',
+   attendees:['tm-yanivf'],
+   agenda:'✈️ LOT Polish Airlines LO151\n3h 50m · Nonstop\nDeparts 23:00 WAW → Arrives 03:50+1 TLV (8 Aug)\nRef: Z4DRPD'},
+
+  // ── 12–13 AUG · YANIV BEN DAVID · Return via LAX ──
+  {id:'fly-12aug-ybd-lo22', type:'travel', partner:'LO22 · LAX → WAW',
+   date:'2026-08-12', time:'16:35',
+   location:'Los Angeles Intl (LAX) T B → Warsaw Chopin (WAW)',
+   attendees:['tm-yanivbd'],
+   agenda:'✈️ LOT Polish Airlines LO22\n11h 35m · Nonstop\nDeparts 16:35 LAX → Arrives 13:10+1 WAW (13 Aug)\nRef: Z4MYCB'},
+  {id:'fly-13aug-ybd-lo155', type:'travel', partner:'LO155 · WAW → TLV',
+   date:'2026-08-13', time:'14:25',
+   location:'Warsaw Chopin (WAW) → Ben Gurion Intl (TLV) T3',
+   attendees:['tm-yanivbd'],
+   agenda:'✈️ LOT Polish Airlines LO155\n3h 25m · Nonstop\nDeparts 14:25 WAW → Arrives 17:50 TLV\nRef: Z4MYCB'},
 ];
 // Filter state
 let filterMembers = new Set(['ALL']);
