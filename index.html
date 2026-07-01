@@ -683,8 +683,13 @@ const db  = firebase.firestore();
 const DOC = db.collection('ase2026').doc('main');
 
 function saveData(key,val){
-  if(key===KEY_EVENTS) DOC.update({events:val}).catch(()=>DOC.set({events:val,team},{merge:true}));
-  else                 DOC.update({team:val}).catch(()=>DOC.set({events,team:val},{merge:true}));
+  const payload = key===KEY_EVENTS ? {events:val,team} : {events,team:val};
+  DOC.set(payload)
+    .then(()=>console.log('✓ Saved to Firestore'))
+    .catch(err=>{
+      console.error('✗ Firestore save error:',err);
+      showToast('❌ שגיאת שמירה: '+err.code+' — '+err.message);
+    });
 }
 
 let team = [];
@@ -831,11 +836,11 @@ DOC.onSnapshot(snap=>{
     SEED_TEAM.forEach(m=>{if(!team.find(t=>t.id===m.id)){team.push(m);save=true;}});
     SEED_EVENTS.forEach(s=>{if(!events.find(e=>e.id===s.id)){events.push(s);save=true;}});
   }
-  if(save) DOC.set({team,events});
+  if(save) DOC.set({team,events}).catch(err=>console.error('Init save error:',err));
   _cloudReady=true;
   rebuildMemberChips();
   if(checkAuth()) render();
-});
+}, err=>{ console.error('onSnapshot error:',err); showToast('❌ שגיאת חיבור: '+err.code); });
 
 // ═══════════════════════════════════════════════════════════
 //  TEAM HELPERS
