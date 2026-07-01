@@ -176,25 +176,29 @@ header{
 .event-card.ec-type-travel,   .mini-card.ec-type-travel      {background:#ccfbf1!important}
 .event-card.ec-type-other,    .mini-card.ec-type-other       {background:#f1f1f5!important}
 
-/* Day divider inside By Person columns */
-.mini-day-divider{border-top:2px dashed var(--border2);margin:10px 0}
-
-/* ══ BY PERSON VIEW ══ */
-#view-byPerson{
-  display:flex;gap:0;overflow-x:auto;
-  border:1px solid var(--border);border-radius:12px;background:var(--surface);
+/* ══ BY PERSON VIEW — synchronized grid ══ */
+#view-byPerson{overflow-x:auto;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+.bp-grid{display:grid;min-width:max-content;width:100%}
+.bp-corner{
+  background:var(--surface2);position:sticky;top:0;z-index:3;
+  border-bottom:1px solid var(--border);border-right:1px solid var(--border);
 }
-.person-col{
-  min-width:280px;max-width:320px;flex:1;
-  border-right:1px solid var(--border);
-}
-.person-col:last-child{border-right:none}
-.person-header{
-  padding:14px 16px;
-  border-bottom:1px solid var(--border);
-  background:var(--surface2);
+.bp-col-header{
+  padding:14px 16px;background:var(--surface2);
   position:sticky;top:0;z-index:2;
+  border-bottom:1px solid var(--border);border-right:1px solid var(--border);
 }
+.bp-date-cell{
+  padding:10px 8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--muted);background:var(--surface2);
+  border-right:1px solid var(--border);line-height:1.5;
+}
+.bp-cell{
+  padding:8px;border-right:1px solid var(--border);
+  display:flex;flex-direction:column;gap:6px;min-height:40px;
+}
+.bp-row-divider .bp-date-cell,
+.bp-row-divider .bp-cell{border-top:2px dashed var(--border2)}
 .person-avatar{
   width:36px;height:36px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
@@ -205,7 +209,6 @@ header{
 .person-name{font-size:14px;font-weight:700}
 .person-role{font-size:11px;color:var(--muted);margin-top:1px}
 .person-count{font-size:11px;color:var(--muted);margin-top:4px}
-.person-events{padding:12px;display:flex;flex-direction:column;gap:8px;min-height:200px}
 .mini-card{
   background:var(--surface2);border:1px solid var(--border);
   border-left:3px solid var(--accent);border-radius:7px;padding:10px 12px;
@@ -1043,35 +1046,53 @@ function renderByPerson(){
   const visibleMembers = filterMembers.has('ALL') ? team : team.filter(m=>filterMembers.has(m.id));
 
   if(!team.length){
-    container.innerHTML=`<div style="padding:40px;text-align:center;color:var(--muted)"><p>No team members yet.<br>Add team members first using the <strong>Team</strong> button.</p></div>`;
+    container.innerHTML=`<div style="padding:40px;text-align:center;color:var(--muted)"><p>No team members yet.</p></div>`;
     return;
   }
 
-  const cols = visibleMembers.map(m=>{
-    const mEvents = filtered.filter(e=>e.attendees.includes(m.id))
-      .sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||''));
-    let evHtml;
-    if(mEvents.length){
-      const groups={};
-      mEvents.forEach(e=>(groups[e.date]=groups[e.date]||[]).push(e));
-      evHtml=Object.entries(groups).map(([,evs],idx)=>
-        (idx>0?'<div class="mini-day-divider"></div>':'')+evs.map(e=>renderMiniCard(e)).join('')
-      ).join('');
-    } else {
-      evHtml=`<div class="no-events-msg">No events match current filters</div>`;
-    }
-    return `
-      <div class="person-col">
-        <div class="person-header">
-          <div class="person-avatar" style="--pc:${m.color}">${memberInitials(m.name)}</div>
-          <div class="person-name">${esc(m.name)}</div>
-          <div class="person-role">${esc(m.role||'')}</div>
-          <div class="person-count">${mEvents.length} event${mEvents.length!==1?'s':''}</div>
-        </div>
-        <div class="person-events">${evHtml}</div>
-      </div>`;
-  }).join('');
-  container.innerHTML = cols || `<div style="padding:40px;text-align:center;color:var(--muted)">Select team members to display</div>`;
+  // All unique dates that have events for any visible member
+  const allDates=[...new Set(
+    filtered.filter(e=>e.attendees.some(id=>visibleMembers.some(m=>m.id===id))).map(e=>e.date)
+  )].sort();
+
+  if(!allDates.length){
+    container.innerHTML=`<div style="padding:40px;text-align:center;color:var(--muted)">No events match current filters</div>`;
+    return;
+  }
+
+  const n=visibleMembers.length;
+  let html=`<div class="bp-grid" style="grid-template-columns:80px repeat(${n},minmax(220px,1fr))">`;
+
+  // Header row: corner + one header per person
+  html+=`<div class="bp-corner"></div>`;
+  visibleMembers.forEach(m=>{
+    const total=filtered.filter(e=>e.attendees.includes(m.id)).length;
+    html+=`<div class="bp-col-header">
+      <div class="person-avatar" style="--pc:${m.color}">${memberInitials(m.name)}</div>
+      <div class="person-name">${esc(m.name)}</div>
+      <div class="person-role">${esc(m.role||'')}</div>
+      <div class="person-count">${total} event${total!==1?'s':''}</div>
+    </div>`;
+  });
+
+  // One row per date — dashed divider on all rows except first
+  const today=new Date();
+  allDates.forEach((date,idx)=>{
+    const d=new Date(date+'T12:00:00');
+    const isToday=d.toDateString()===today.toDateString();
+    const dl=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    const rowCls=idx>0?'bp-row-divider':'';
+
+    html+=`<div class="bp-date-cell ${rowCls}">${dl}${isToday?'<br><span class="today-badge">TODAY</span>':''}</div>`;
+    visibleMembers.forEach(m=>{
+      const evs=filtered.filter(e=>e.date===date&&e.attendees.includes(m.id))
+        .sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+      html+=`<div class="bp-cell ${rowCls}">${evs.map(e=>renderMiniCard(e)).join('')}</div>`;
+    });
+  });
+
+  html+=`</div>`;
+  container.innerHTML=html;
 }
 
 function renderByCategory(){
