@@ -116,15 +116,21 @@ header{
 .search-box:focus{border-color:var(--accent)}
 
 /* ══ TIMELINE VIEW ══ */
-.day-group{margin-bottom:20px}
-.day-group+.day-group{border-top:2px dashed var(--border2);padding-top:24px}
-.day-label{
-  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;
-  color:var(--muted);padding:0 0 8px 2px;
-  display:flex;align-items:center;gap:8px;
+.day-group{margin-bottom:28px}
+.day-group+.day-group{border-top:3px solid var(--border2);padding-top:28px}
+.day-group-conf+.day-group,.day-group+.day-group-conf,.day-group-conf+.day-group-conf{
+  border-top:4px solid var(--accent);
 }
-.day-label::after{content:'';flex:1;height:1px;background:var(--border)}
+.day-label{
+  font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;
+  color:var(--text);padding:0 0 12px 2px;
+  display:flex;align-items:center;gap:10px;
+}
+.day-label::after{content:'';flex:1;height:2px;background:var(--border2);border-radius:1px}
+.day-label-conf{color:var(--accent)}
+.day-label-conf::after{background:var(--accent);opacity:.35}
 .today-badge{background:var(--accent);color:#fff;font-size:10px;padding:1px 7px;border-radius:20px}
+.conf-day-badge{background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:2px 10px;border-radius:20px;letter-spacing:.4px}
 
 .event-card{
   background:var(--surface);border:1px solid var(--border);
@@ -1033,11 +1039,14 @@ function renderTimeline(){
   filtered.forEach(e=>(groups[e.date]=groups[e.date]||[]).push(e));
   const tl = document.getElementById('view-timeline');
   if(!filtered.length){ tl.innerHTML=emptyState(); return; }
-  tl.innerHTML = Object.entries(groups).map(([date,evs])=>`
-    <div class="day-group">
-      <div class="day-label">${fmtDayLabel(date)}</div>
+  const CONF={'2026-07-27':1,'2026-07-28':2};
+  tl.innerHTML = Object.entries(groups).map(([date,evs])=>{
+    const conf=CONF[date];
+    return `<div class="day-group${conf?' day-group-conf':''}">
+      <div class="day-label${conf?' day-label-conf':''}">${fmtDayLabel(date,conf)}</div>
       ${evs.map(e=>renderCard(e)).join('')}
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function renderByPerson(){
@@ -1453,12 +1462,15 @@ function fmtTime(t){
   const ap=h>=12?'PM':'AM';
   return `${h%12||12}:${String(m).padStart(2,'0')} ${ap}`;
 }
-function fmtDayLabel(dateStr){
+function fmtDayLabel(dateStr,confDay){
   const d=new Date(dateStr+'T12:00:00');
   const today=new Date();
   const isToday=d.toDateString()===today.toDateString();
   const label=d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
-  return label+(isToday?' <span class="today-badge">TODAY</span>':'');
+  let badges='';
+  if(isToday) badges+=' <span class="today-badge">TODAY</span>';
+  if(confDay) badges+=` <span class="conf-day-badge">🎪 ASE 2026 · Day ${confDay}</span>`;
+  return label+badges;
 }
 function emptyState(){ return `<div class="empty"><div class="icon">📭</div><p>No events match the current filters.</p></div>`; }
 function esc(s){ if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
