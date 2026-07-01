@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>ASE 2026 — Team Schedule Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async></script>
+<style>
+:root{
+  --bg:#eef0fa;--surface:#ffffff;--surface2:#f4f5ff;--surface3:#eceeff;
+  --border:#dde1f5;--border2:#c5cae8;
+  --accent:#4f6ef7;--accent-soft:#eef0ff;
+  --text:#1a1d30;--muted:#6b72a0;--muted2:#9ea5c5;
+  --green:#16a34a;--yellow:#d97706;--red:#dc2626;--purple:#9333ea;--teal:#0d9488;
+  --card-r:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* ── HEADER ── */
+header{
+  background:linear-gradient(135deg,#ffffff,#eceeff);
+  border-bottom:1px solid var(--border);
+  padding:16px 24px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  position:sticky;top:0;z-index:50;
+}
+.h-left{display:flex;align-items:center;gap:14px}
+.logo{background:var(--accent);color:#fff;font-weight:800;font-size:12px;padding:7px 11px;border-radius:7px;letter-spacing:1px;white-space:nowrap}
+.h-title h1{font-size:17px;font-weight:700}
+.h-title p{font-size:12px;color:var(--muted);margin-top:1px}
+.h-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.conf-chip{
+  background:var(--accent-soft);border:1px solid var(--border2);
+  border-radius:7px;padding:6px 12px;font-size:12px;color:var(--accent);
+  display:flex;align-items:center;gap:6px;white-space:nowrap;
+}
+.conf-chip strong{color:var(--text)}
+
+/* ── BTN ── */
+.btn{
+  padding:8px 16px;border-radius:8px;border:none;cursor:pointer;
+  font-size:13px;font-weight:600;font-family:inherit;
+  transition:opacity .15s,transform .1s;
+  display:inline-flex;align-items:center;gap:5px;white-space:nowrap;
+}
+.btn:hover{opacity:.85}.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.btn-danger{background:#fff0f0;color:var(--red);border:1px solid #fecaca}
+.btn-sm{padding:4px 10px;font-size:12px}
+.btn-xs{padding:3px 8px;font-size:11px;border-radius:5px}
+
+/* ── FILTER BAR ── */
+.filter-bar{
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  padding:12px 24px;
+  display:flex;flex-direction:column;gap:10px;
+}
+.filter-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.filter-label{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:700;min-width:90px}
+.chip-group{display:flex;gap:6px;flex-wrap:wrap}
+.chip{
+  padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;
+  border:1px solid var(--border);background:var(--surface2);color:var(--muted);
+  cursor:pointer;transition:all .15s;user-select:none;
+}
+.chip.active{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.chip.member-chip.active{border-color:var(--chip-color,var(--accent));background:color-mix(in srgb,var(--chip-color,var(--accent)) 15%,transparent);color:var(--chip-color,var(--accent))}
+
+.view-toggle{display:flex;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-left:auto}
+.view-btn{
+  padding:6px 14px;font-size:12px;font-weight:600;font-family:inherit;
+  background:var(--surface2);color:var(--muted);border:none;cursor:pointer;
+  transition:all .15s;border-right:1px solid var(--border);
+}
+.view-btn:last-child{border-right:none}
+.view-btn.active{background:var(--accent);color:#fff}
+
+.date-inputs{display:flex;align-items:center;gap:6px}
+.date-inputs input{
+  background:var(--surface2);border:1px solid var(--border);color:var(--text);
+  border-radius:6px;padding:5px 8px;font-size:12px;font-family:inherit;outline:none;
+}
+.date-inputs input:focus{border-color:var(--accent)}
+.date-inputs span{color:var(--muted);font-size:12px}
+
+/* ── MAIN ── */
+#mainContent{padding:20px 24px;max-width:100%}
+
+/* ── STATS ── */
+.stats{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.stat{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--card-r);
+  padding:14px 18px;min-width:130px;
+}
+.stat .s-label{font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted)}
+.stat .s-val{font-size:24px;font-weight:700;margin-top:4px}
+.stat .s-sub{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* ── TOOLBAR ── */
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.toolbar-title{font-size:15px;font-weight:700;flex:1}
+.search-box{
+  background:var(--surface2);border:1px solid var(--border);color:var(--text);
+  border-radius:8px;padding:7px 12px;font-size:13px;font-family:inherit;
+  outline:none;width:210px;
+}
+.search-box:focus{border-color:var(--accent)}
+
+/* ══ TIMELINE VIEW ══ */
+.day-group{margin-bottom:20px}
+.day-label{
+  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;
+  color:var(--muted);padding:0 0 8px 2px;
+  display:flex;align-items:center;gap:8px;
+}
+.day-label::after{content:'';flex:1;height:1px;background:var(--border)}
+.today-badge{background:var(--accent);color:#fff;font-size:10px;padding:1px 7px;border-radius:20px}
+
+.event-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-left:3px solid var(--accent);border-radius:var(--card-r);
+  padding:14px 16px;margin-bottom:10px;transition:box-shadow .2s;
+  --left-color:var(--accent);border-left-color:var(--left-color);
+}
+.event-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.4)}
+.ec-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.ec-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.type-pill{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+  padding:2px 8px;border-radius:20px;
+}
+.ec-time{font-size:12px;color:var(--muted)}
+.ec-title{font-size:15px;font-weight:700;margin:6px 0 3px}
+.ec-loc{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px}
+.ec-body{margin-top:10px;display:flex;gap:20px;flex-wrap:wrap}
+.ec-field{min-width:0}
+.ec-field .fl{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:700;margin-bottom:4px}
+.ec-field .fv{font-size:12px;color:var(--text);line-height:1.5}
+.attendee-chip{
+  display:inline-flex;align-items:center;gap:4px;
+  border-radius:20px;padding:2px 8px;font-size:11px;font-weight:600;
+  margin:2px 3px 2px 0;
+  --ac:var(--accent);
+  background:color-mix(in srgb,var(--ac) 15%,transparent);
+  border:1px solid color-mix(in srgb,var(--ac) 40%,transparent);
+  color:var(--ac);
+}
+.attendee-dot{width:6px;height:6px;border-radius:50%;background:var(--ac);flex-shrink:0}
+.ec-actions{display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+
+/* TYPE COLORS */
+.type-meeting    {background:#eef0ff;color:#4f6ef7} .ec-type-meeting    {--left-color:#4f6ef7}
+.type-dinner     {background:#fff8e8;color:#b45309} .ec-type-dinner     {--left-color:#f59e0b}
+.type-lunch      {background:#f0fdf4;color:#15803d} .ec-type-lunch      {--left-color:#22c55e}
+.type-presentation{background:#faf0ff;color:#9333ea} .ec-type-presentation{--left-color:#a855f7}
+.type-conference {background:#f0f9ff;color:#0369a1} .ec-type-conference {--left-color:#0ea5e9}
+.type-travel     {background:#f0fdf9;color:#0f766e} .ec-type-travel     {--left-color:#10b981}
+.type-other      {background:#f5f5f8;color:var(--muted)} .ec-type-other  {--left-color:var(--muted)}
+
+/* ══ BY PERSON VIEW ══ */
+#view-byPerson{
+  display:flex;gap:0;overflow-x:auto;
+  border:1px solid var(--border);border-radius:12px;background:var(--surface);
+}
+.person-col{
+  min-width:280px;max-width:320px;flex:1;
+  border-right:1px solid var(--border);
+}
+.person-col:last-child{border-right:none}
+.person-header{
+  padding:14px 16px;
+  border-bottom:1px solid var(--border);
+  background:var(--surface2);
+  position:sticky;top:0;z-index:2;
+}
+.person-avatar{
+  width:36px;height:36px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;color:#fff;
+  margin-bottom:8px;
+  --pc:var(--accent);background:var(--pc);
+}
+.person-name{font-size:14px;font-weight:700}
+.person-role{font-size:11px;color:var(--muted);margin-top:1px}
+.person-count{font-size:11px;color:var(--muted);margin-top:4px}
+.person-events{padding:12px;display:flex;flex-direction:column;gap:8px;min-height:200px}
+.mini-card{
+  background:var(--surface2);border:1px solid var(--border);
+  border-left:3px solid var(--accent);border-radius:7px;padding:10px 12px;
+  --left-color:var(--accent);border-left-color:var(--left-color);
+  cursor:pointer;transition:box-shadow .15s;
+}
+.mini-card:hover{box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.mini-date{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.mini-partner{font-size:13px;font-weight:700;margin-bottom:3px}
+.mini-loc{font-size:11px;color:var(--muted)}
+.mini-time{font-size:11px;color:var(--muted);margin-top:3px}
+.no-events-msg{color:var(--muted2);font-size:12px;text-align:center;padding:30px 10px;font-style:italic}
+
+/* ══ BY CATEGORY VIEW ══ */
+.cat-section{margin-bottom:24px}
+.cat-header{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 0;margin-bottom:12px;
+  border-bottom:1px solid var(--border);
+}
+.cat-icon{font-size:18px}
+.cat-title{font-size:14px;font-weight:700}
+.cat-count{font-size:12px;color:var(--muted)}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:50px 20px;color:var(--muted)}
+.empty .icon{font-size:40px;margin-bottom:10px}
+.empty p{font-size:13px}
+
+/* ── MODAL ── */
+.modal-overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);
+  z-index:200;align-items:center;justify-content:center;padding:20px;
+}
+.modal-overlay.open{display:flex}
+.modal{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;width:100%;max-width:640px;
+  max-height:90vh;overflow-y:auto;padding:24px;
+  box-shadow:0 20px 60px rgba(0,0,0,.6);
+}
+.modal.modal-wide{max-width:820px}
+.modal h2{font-size:17px;font-weight:700;margin-bottom:18px;
+  display:flex;align-items:center;gap:8px;
+  padding-bottom:14px;border-bottom:1px solid var(--border);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.form-row.single{grid-template-columns:1fr}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group label{font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);font-weight:700}
+.form-group input,.form-group select,.form-group textarea{
+  background:var(--surface2);border:1px solid var(--border);color:var(--text);
+  border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;
+}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--accent)}
+textarea{resize:vertical;min-height:80px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;padding-top:14px;border-top:1px solid var(--border)}
+
+/* Team modal */
+.team-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;max-height:300px;overflow-y:auto}
+.team-item{
+  background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+  padding:10px 14px;display:flex;align-items:center;gap:12px;
+}
+.team-item-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+.team-item-info{flex:1}
+.team-item-name{font-size:13px;font-weight:600}
+.team-item-role{font-size:11px;color:var(--muted)}
+.team-item-actions{display:flex;gap:5px}
+
+.member-checkboxes{display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto}
+.member-cb{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;transition:background .1s}
+.member-cb:hover{background:var(--surface2)}
+.member-cb input{cursor:pointer}
+.cb-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.cb-name{font-size:13px}
+
+/* Import modal */
+.import-zone{
+  border:2px dashed var(--border2);border-radius:10px;padding:30px;text-align:center;
+  cursor:pointer;transition:border-color .2s;margin-bottom:14px;
+}
+.import-zone:hover,.import-zone.drag{border-color:var(--accent)}
+.import-zone .iz-icon{font-size:32px;margin-bottom:8px}
+.import-zone p{font-size:13px;color:var(--muted)}
+.import-zone small{font-size:11px;color:var(--muted2)}
+.import-preview{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px}
+.import-preview table{width:100%;border-collapse:collapse;font-size:11px}
+.import-preview th{color:var(--muted);font-weight:600;text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)}
+.import-preview td{padding:4px 8px;color:var(--text);border-bottom:1px solid var(--border)}
+.import-preview tr:last-child td{border-bottom:none}
+.import-status{font-size:12px;padding:8px 12px;border-radius:6px;margin-bottom:10px}
+.import-status.ok{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
+.import-status.warn{background:#fffbeb;color:#b45309;border:1px solid #fde68a}
+.import-status.err{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
+
+/* Color picker */
+.color-picker{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.color-swatch{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .1s}
+.color-swatch:hover{transform:scale(1.2)}
+.color-swatch.selected{border-color:#fff}
+
+/* Highlight today */
+.conf-days-note{
+  background:var(--accent-soft);border:1px solid var(--border2);
+  border-radius:8px;padding:8px 14px;font-size:12px;color:var(--accent);
+  margin-bottom:16px;display:flex;align-items:center;gap:8px;
+}
+
+/* ── LOGIN SCREEN ── */
+#loginScreen{
+  position:fixed;inset:0;z-index:1000;
+  background:linear-gradient(135deg,#eef0fa 0%,#e0e4ff 100%);
+  display:flex;align-items:center;justify-content:center;
+}
+#loginScreen.hidden{display:none}
+.login-card{
+  background:#fff;border:1px solid var(--border);border-radius:18px;
+  padding:48px 40px;text-align:center;
+  box-shadow:0 8px 48px rgba(79,110,247,.15);
+  max-width:400px;width:90%;
+}
+.login-logo{
+  background:var(--accent);color:#fff;font-weight:800;font-size:16px;
+  padding:10px 18px;border-radius:9px;letter-spacing:1px;
+  display:inline-block;margin-bottom:24px;
+}
+.login-title{font-size:20px;font-weight:700;color:var(--text);margin-bottom:8px}
+.login-sub{font-size:13px;color:var(--muted);margin-bottom:28px;line-height:1.6}
+#g_id_signin{display:flex;justify-content:center}
+.login-error{
+  background:#fff0f0;border:1px solid #fecaca;border-radius:8px;
+  color:var(--red);font-size:12px;padding:10px 14px;
+  margin-top:16px;display:none;line-height:1.5;
+}
+.login-error.show{display:block}
+.login-note{font-size:11px;color:var(--muted2);margin-top:18px}
+.user-badge{
+  background:var(--accent-soft);border:1px solid var(--border2);
+  border-radius:7px;padding:5px 10px;font-size:12px;color:var(--accent);
+  display:none;align-items:center;gap:5px;max-width:200px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.user-badge.show{display:flex}
+.btn-logout{background:#fff0f5;color:#be185d;border:1px solid #fbcfe8}
+
+/* ── MOBILE: 768px (tablets & landscape phones) ── */
+@media(max-width:768px){
+  header{padding:10px 14px;gap:8px}
+  .h-title p{display:none}
+  .logo{font-size:11px;padding:6px 9px}
+  .conf-chip{display:none}
+  .h-right{gap:6px}
+  .filter-bar{padding:10px 12px;gap:8px}
+  .filter-row{gap:8px}
+  .filter-label{min-width:60px;font-size:10px}
+  .view-toggle{margin-left:0}
+  .view-btn{padding:5px 10px;font-size:11px}
+  #view-byPerson{flex-direction:column}
+  .person-col{min-width:100%!important;max-width:100%!important}
+  .stats{gap:8px}
+  .stat{min-width:110px;padding:12px 14px}
+  .stat .s-val{font-size:20px}
+  #mainContent{padding:14px 12px}
+  .toolbar{flex-direction:column;align-items:stretch;gap:8px}
+  .search-box{width:100%}
+}
+
+/* ── MOBILE: 480px (portrait phones) ── */
+@media(max-width:480px){
+  .h-left{gap:8px}
+  .logo{font-size:10px;padding:5px 7px}
+  h1{font-size:14px}
+  .h-right .btn{font-size:11px;padding:6px 10px}
+  .user-badge{max-width:130px;font-size:11px}
+  .stats{display:grid;grid-template-columns:1fr 1fr}
+  .stat{min-width:0}
+  .stat .s-val{font-size:18px}
+  #mainContent{padding:10px}
+  .event-card{padding:10px 12px}
+  .ec-top{flex-direction:column;gap:6px}
+}
+
+/* ── MOBILE: 640px (modals + touch targets) ── */
+@media(max-width:640px){
+  header{padding:12px 14px}
+  #mainContent{padding:14px}
+  .filter-bar{padding:10px 14px}
+  .form-row{grid-template-columns:1fr}
+  .search-box{width:100%}
+  .modal{
+    max-width:100%!important;width:100%!important;
+    max-height:100%!important;height:100%!important;
+    border-radius:0!important;
+  }
+  .modal-overlay{align-items:flex-start;padding:0}
+  .form-group input,.form-group select,.form-group textarea{min-height:44px;font-size:16px}
+  .swatch{width:30px!important;height:30px!important}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">ASE 2026</div>
+    <div class="login-title">Team Schedule Dashboard</div>
+    <div class="login-sub">Sign in with your SpoTower Google account<br>to access the team schedule.</div>
+    <div id="g_id_signin"></div>
+    <div class="login-error" id="loginError"></div>
+    <div class="login-note">Access restricted to @spotower.com accounts</div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="h-left">
+    <div class="logo">ASE&nbsp;2026</div>
+    <div class="h-title">
+      <h1>Team Schedule Dashboard</h1>
+      <p>Client meetings · Conference · Events</p>
+    </div>
+  </div>
+  <div class="h-right">
+    <div class="conf-chip">📍 <strong>Affiliate Summit East 2026</strong> · Jul 27–28 · Marriott Marquis, Times Square, NYC</div>
+    <div class="user-badge" id="userBadge">👤 <span id="userEmail"></span></div>
+    <button class="btn btn-ghost" onclick="openTeamModal()">👥 Team</button>
+    <button class="btn btn-ghost" onclick="openImportModal()">📥 Import</button>
+    <button class="btn btn-primary" onclick="openEventModal()">＋ Add Event</button>
+    <button class="btn btn-ghost btn-logout" id="btnLogout" onclick="logout()" style="display:none">Sign out</button>
+  </div>
+</header>
+
+<!-- FILTER BAR -->
+<div class="filter-bar">
+  <div class="filter-row">
+    <span class="filter-label">Team</span>
+    <div class="chip-group" id="memberChips">
+      <span class="chip active" data-id="ALL" onclick="toggleMemberFilter('ALL')">All members</span>
+    </div>
+    <div class="view-toggle" style="margin-left:auto">
+      <button class="view-btn active" data-view="timeline" onclick="setView('timeline')">📋 Timeline</button>
+      <button class="view-btn" data-view="byPerson" onclick="setView('byPerson')">👤 By Person</button>
+      <button class="view-btn" data-view="byCategory" onclick="setView('byCategory')">🏷 By Type</button>
+    </div>
+  </div>
+  <div class="filter-row">
+    <span class="filter-label">Type</span>
+    <div class="chip-group" id="catChips">
+      <span class="chip active" data-cat="ALL" onclick="toggleCatFilter('ALL')">All types</span>
+      <span class="chip" data-cat="meeting"     onclick="toggleCatFilter('meeting')">💼 Meeting</span>
+      <span class="chip" data-cat="dinner"      onclick="toggleCatFilter('dinner')">🍽 Dinner</span>
+      <span class="chip" data-cat="lunch"       onclick="toggleCatFilter('lunch')">🥗 Lunch</span>
+      <span class="chip" data-cat="presentation"onclick="toggleCatFilter('presentation')">📊 Presentation</span>
+      <span class="chip" data-cat="conference"  onclick="toggleCatFilter('conference')">🎪 Conference</span>
+      <span class="chip" data-cat="travel"      onclick="toggleCatFilter('travel')">✈️ Travel</span>
+      <span class="chip" data-cat="other"       onclick="toggleCatFilter('other')">📌 Other</span>
+    </div>
+    <div class="date-inputs" style="margin-left:auto">
+      <input type="date" id="filterFrom" onchange="render()" title="From date"/>
+      <span>→</span>
+      <input type="date" id="filterTo" onchange="render()" title="To date"/>
+      <button class="btn btn-ghost btn-xs" onclick="clearDateFilter()">✕</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="mainContent">
+
+  <!-- Stats -->
+  <div class="stats" id="statsBar"></div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <span class="toolbar-title" id="viewTitle">Timeline</span>
+    <input type="text" class="search-box" id="searchInput" placeholder="🔍  Search..." oninput="render()"/>
+  </div>
+
+  <!-- Conference note -->
+  <div class="conf-days-note" id="confNote">
+    📅 <strong>ASE 2026:</strong> July 27–28, 2026 at Marriott Marquis, Times Square, NYC
+    &nbsp;·&nbsp; Pre-conference meetings: Jul 26 &nbsp;·&nbsp; Post-conference: Jul 29–31
+  </div>
+
+  <!-- Views -->
+  <div id="view-timeline"></div>
+  <div id="view-byPerson" style="display:none"></div>
+  <div id="view-byCategory" style="display:none"></div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MODAL: ADD / EDIT EVENT
+════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modalEvent">
+<div class="modal">
+  <h2 id="modalEventTitle">➕ Add Event</h2>
+  <div class="form-row">
+    <div class="form-group">
+      <label>Event Type</label>
+      <select id="f_type">
+        <option value="meeting">💼 Meeting</option>
+        <option value="dinner">🍽 Dinner</option>
+        <option value="lunch">🥗 Lunch</option>
+        <option value="presentation">📊 Presentation</option>
+        <option value="conference">🎪 Conference</option>
+        <option value="travel">✈️ Travel</option>
+        <option value="other">📌 Other</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Partner / Company</label>
+      <input type="text" id="f_partner" placeholder="e.g. ENDURANCE"/>
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label>Date</label>
+      <input type="date" id="f_date"/>
+    </div>
+    <div class="form-group">
+      <label>Time</label>
+      <input type="time" id="f_time"/>
+    </div>
+  </div>
+  <div class="form-row single">
+    <div class="form-group">
+      <label>Location / Venue</label>
+      <input type="text" id="f_location" placeholder="e.g. Charlotte, NC — Restaurant Name"/>
+    </div>
+  </div>
+  <div class="form-row single">
+    <div class="form-group">
+      <label>Team Members Attending</label>
+      <div class="member-checkboxes" id="f_attendees_cbs"></div>
+    </div>
+  </div>
+  <div class="form-row single">
+    <div class="form-group">
+      <label>Agenda / Notes</label>
+      <textarea id="f_agenda" placeholder="Key topics, goals, follow-ups..."></textarea>
+    </div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn btn-ghost" onclick="closeModal('modalEvent')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveEvent()">Save Event</button>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MODAL: TEAM MANAGEMENT
+════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modalTeam">
+<div class="modal">
+  <h2>👥 Team Members</h2>
+  <div class="team-list" id="teamList"></div>
+  <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
+    <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px">Add New Member</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Name</label>
+        <input type="text" id="tm_name" placeholder="Full name"/>
+      </div>
+      <div class="form-group">
+        <label>Role / Title</label>
+        <input type="text" id="tm_role" placeholder="e.g. Account Manager"/>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label>Color</label>
+      <div class="color-picker" id="tmColorPicker"></div>
+    </div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn btn-ghost" onclick="closeModal('modalTeam')">Close</button>
+    <button class="btn btn-primary" onclick="addTeamMember()">Add Member</button>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MODAL: IMPORT
+════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modalImport">
+<div class="modal modal-wide">
+  <h2>📥 Import Schedule (Excel / CSV)</h2>
+  <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6">
+    Supports <strong>Google Calendar</strong> (CSV export) and <strong>Outlook</strong> (CSV export) formats, as well as generic <strong>.xlsx</strong> files.
+  </div>
+
+  <div class="import-zone" id="importZone" onclick="document.getElementById('fileInput').click()"
+       ondragover="handleDragOver(event)" ondrop="handleDrop(event)" ondragleave="this.classList.remove('drag')">
+    <div class="iz-icon">📂</div>
+    <p>Click to browse or drag & drop your file here</p>
+    <small>Supported: .csv, .xlsx, .xls</small>
+  </div>
+  <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleFileSelect(event)"/>
+
+  <div id="importStatus" style="display:none"></div>
+  <div id="importPreviewWrap" style="display:none">
+    <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">Preview (first 5 rows)</div>
+    <div class="import-preview" id="importPreview"></div>
+
+    <div class="form-row" style="margin-top:14px">
+      <div class="form-group">
+        <label>Assign to Team Member</label>
+        <select id="importAssignTo">
+          <option value="">— Auto-detect from attendees column —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Default Event Type</label>
+        <select id="importDefaultType">
+          <option value="meeting">💼 Meeting</option>
+          <option value="dinner">🍽 Dinner</option>
+          <option value="conference">🎪 Conference</option>
+          <option value="other">📌 Other</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-actions">
+    <button class="btn btn-ghost" onclick="closeModal('modalImport')">Cancel</button>
+    <button class="btn btn-primary" id="importConfirmBtn" style="display:none" onclick="confirmImport()">Import Events</button>
+  </div>
+</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  DATA STORE
+// ═══════════════════════════════════════════════════════════
+const KEY_EVENTS = 'ase26_events_v2';
+const KEY_TEAM   = 'ase26_team_v3';
+
+const DEFAULT_TEAM = [
+  {id:'tm-alon',    name:'Alon Moshe',      role:'', color:'#4f6ef7'},
+  {id:'tm-amit',    name:'Amit Abekasis',   role:'', color:'#a855f7'},
+  {id:'tm-tal',     name:'Tal Rubin',       role:'', color:'#f43f5e'},
+  {id:'tm-yali',    name:'Yali Ziv Av',     role:'', color:'#14b8a6'},
+  {id:'tm-yanivbd', name:'Yaniv Ben David', role:'', color:'#22c55e'},
+  {id:'tm-yanivf',  name:'Yaniv Friedman',  role:'', color:'#f59e0b'},
+];
+
+const PALETTE = [
+  '#4f6ef7','#a855f7','#f59e0b','#22c55e','#14b8a6',
+  '#f43f5e','#06b6d4','#f97316','#8b5cf6','#ec4899'
+];
+
+const TYPE_META = {
+  meeting:      {icon:'💼',label:'Meeting',     bg:'#1a2260',color:'#818cf8'},
+  dinner:       {icon:'🍽',label:'Dinner',      bg:'#3a2500',color:'#fbbf24'},
+  lunch:        {icon:'🥗',label:'Lunch',       bg:'#1a3020',color:'#4ade80'},
+  presentation: {icon:'📊',label:'Presentation',bg:'#2d1a4a',color:'#c084fc'},
+  conference:   {icon:'🎪',label:'Conference',  bg:'#1a2d3a',color:'#38bdf8'},
+  travel:       {icon:'✈️',label:'Travel',      bg:'#0d2e1c',color:'#34d399'},
+  other:        {icon:'📌',label:'Other',       bg:'#1e2030',color:'#7880a8'},
+};
+
+function loadData(key, def){ try{const r=localStorage.getItem(key);return r?JSON.parse(r):def;}catch{return def;} }
+function saveData(key,val){ localStorage.setItem(key,JSON.stringify(val)); }
+
+let team   = loadData(KEY_TEAM, DEFAULT_TEAM);
+let events = loadData(KEY_EVENTS, [
+  {id:'endurance-1',type:'dinner',partner:'ENDURANCE',date:'2026-07-30',time:'19:00',location:'Charlotte, NC',attendees:[],agenda:'Client dinner with ENDURANCE in Charlotte, NC.\nFlight from NYC — short hop.\nDiscuss partnership and upcoming opportunities.'},
+]);
+
+// ── SEED EVENTS (merged on every load, never duplicated) ──
+// Remove legacy per-person IDs replaced by combined multi-attendee events
+const LEGACY_IDS = ['tal-ey600','tal-ey3','tal-ey2','tal-ey597'];
+events = events.filter(e=>!LEGACY_IDS.includes(e.id));
+
+const SEED_EVENTS = [
+
+  // ── 24 JUL · YALI · Outbound (1 day early) ──
+  {id:'fly-24jul-ey600', type:'travel', partner:'EY 600 · TLV → AUH',
+   date:'2026-07-24', time:'00:55',
+   location:'Ben Gurion Intl (TLV) T3 → Zayed International (AUH) TA',
+   attendees:['tm-yali'],
+   agenda:'✈️ Etihad Airways EY 600\nAirbus A321 · 3h 15m · Nonstop\nDeparts 00:55 TLV → Arrives 05:10 AUH\nYali seat 20A · Ref: 99T4GC'},
+  {id:'fly-24jul-ey3', type:'travel', partner:'EY 3 · AUH → JFK',
+   date:'2026-07-24', time:'09:40',
+   location:'Zayed International (AUH) TA → John F. Kennedy Intl (JFK) T4',
+   attendees:['tm-yali'],
+   agenda:'✈️ Etihad Airways EY 3\nAirbus A350-1000 · 14h 20m · Nonstop\nDeparts 09:40 AUH → Arrives 16:00 JFK\nYali seat 34A · Ref: 99T4GC'},
+
+  // ── 25 JUL · TAL + ALON + AMIT · Outbound (same flights) ──
+  {id:'fly-25jul-ey600', type:'travel', partner:'EY 600 · TLV → AUH',
+   date:'2026-07-25', time:'00:55',
+   location:'Ben Gurion Intl (TLV) T3 → Zayed International (AUH) TA',
+   attendees:['tm-tal','tm-alon','tm-amit'],
+   agenda:'✈️ Etihad Airways EY 600\nAirbus A321Neo · 3h 15m · Nonstop\nDeparts 00:55 TLV → Arrives 05:10 AUH\nAlon seat F15 · Amit seat E15 · Ref: 99PUTQ / 98Y55M'},
+  {id:'fly-25jul-ey3', type:'travel', partner:'EY 3 · AUH → JFK',
+   date:'2026-07-25', time:'09:40',
+   location:'Zayed International (AUH) TA → John F. Kennedy Intl (JFK) T4',
+   attendees:['tm-tal','tm-alon','tm-amit'],
+   agenda:'✈️ Etihad Airways EY 3\nAirbus A350-1000 · 14h 20m · Nonstop\nDeparts 09:40 AUH → Arrives 16:00 JFK\nAlon seat K35 · Amit seat J35 · Ref: 99PUTQ / 98Y55M'},
+
+  // ── 29 JUL · ALON + AMIT · Return (early) ──
+  {id:'fly-29jul-ey2', type:'travel', partner:'EY 2 · JFK → AUH',
+   date:'2026-07-29', time:'15:45',
+   location:'John F. Kennedy Intl (JFK) T4 → Zayed International (AUH) TA',
+   attendees:['tm-alon','tm-amit'],
+   agenda:'✈️ Etihad Airways EY 2\nAirbus A350-1000 · 12h 40m · Nonstop\nDeparts 15:45 JFK → Arrives 12:25+1 AUH (30 Jul)\nAlon seat K35 · Amit seat J35 · Ref: 98Y55M'},
+
+  // ── 30 JUL · ALON + AMIT · Final leg home ──
+  {id:'fly-30jul-ey597', type:'travel', partner:'EY 597 · AUH → TLV',
+   date:'2026-07-30', time:'14:25',
+   location:'Zayed International (AUH) TA → Ben Gurion Intl (TLV) T3',
+   attendees:['tm-alon','tm-amit'],
+   agenda:'✈️ Etihad Airways EY 597\nAirbus A321Neo · 3h 25m · Nonstop\nDeparts 14:25 AUH → Arrives 16:50 TLV\nAlon seat F15 · Amit seat E15 · Ref: 98Y55M'},
+
+  // ── 31 JUL · TAL + YALI · Return ──
+  {id:'fly-31jul-ey2', type:'travel', partner:'EY 2 · JFK → AUH',
+   date:'2026-07-31', time:'15:45',
+   location:'John F. Kennedy Intl (JFK) T4 → Zayed International (AUH) TA',
+   attendees:['tm-tal','tm-yali'],
+   agenda:'✈️ Etihad Airways EY 2\nAirbus A350-1000 · 12h 40m · Nonstop\nDeparts 15:45 JFK → Arrives 12:25+1 AUH (1 Aug)\nYali seat 33A · Ref: 99PUTQ / 99T4GC'},
+
+  // ── 1 AUG · TAL + YALI · Final leg home ──
+  {id:'fly-01aug-ey597', type:'travel', partner:'EY 597 · AUH → TLV',
+   date:'2026-08-01', time:'14:25',
+   location:'Zayed International (AUH) TA → Ben Gurion Intl (TLV) T3',
+   attendees:['tm-tal','tm-yali'],
+   agenda:'✈️ Etihad Airways EY 597\nAirbus A321Neo · 3h 25m · Nonstop\nDeparts 14:25 AUH → Arrives 16:50 TLV\nYali seat 18A · Ref: 99PUTQ / 99T4GC'},
+
+  // ── YALI · ASE 2026 MEETINGS ──────────────────────────────
+
+  // 27 JUL
+  {id:'yali-27jul-alleviate', type:'meeting', partner:'Alleviate',
+   date:'2026-07-27', time:'10:00',
+   location:'ASE 2026, New York',
+   attendees:['tm-yali'],
+   agenda:'☕ Coffee · 10:00–10:45\nGoal: Meet the CRO\nVertical: Tax · Priority: Low'},
+
+  {id:'yali-27jul-faye', type:'lunch', partner:'Faye',
+   date:'2026-07-27', time:'12:30',
+   location:'ASE 2026, New York',
+   attendees:['tm-yali','tm-alon'],
+   agenda:'🥗 Lunch · 12:30–13:45\nGoal: Strengthen the partnership\nVertical: Travel Insurance · Priority: Mid'},
+
+  {id:'yali-27jul-shopify', type:'meeting', partner:'Shopify',
+   date:'2026-07-27', time:'14:00',
+   location:'ASE 2026, New York',
+   attendees:['tm-yali'],
+   agenda:'☕ Coffee · 14:00–14:45\nGoal: Deal increase, strengthen the partnership\nVertical: AI & Website Builder · Priority: Low'},
+
+  {id:'yali-27jul-anthem', type:'meeting', partner:'Anthem',
+   date:'2026-07-27', time:'15:00',
+   location:'ASE 2026, New York',
+   attendees:['tm-yali','tm-alon'],
+   agenda:'☕ Coffee / Drinks · 15:00–15:45\nGoal: Strengthen the partnership\nVertical: Tax · Priority: Mid'},
+
+  {id:'yali-27jul-tra', type:'dinner', partner:'TRA',
+   date:'2026-07-27', time:'18:00',
+   location:'ASE 2026, New York',
+   attendees:['tm-yali','tm-alon','tm-yanivf'],
+   agenda:'🍽 Dinner · 18:00–21:00\nGoal: BB, P1 flexibility, growth opportunities\nVertical: Tax · Priority: High'},
+
+  // 28 JUL
+  {id:'yali-28jul-psychicsource', type:'lunch', partner:'Psychic Source',
+   date:'2026-07-28', time:'13:00',
+   location:'ASE 2026, New York',
+   attendees:['tm-yali'],
+   agenda:'🥗 Lunch · 13:00–14:00\nGoal: Strengthen the partnership\nVertical: Psychic Reading · Priority: Mid'},
+
+  {id:'yali-28jul-base44', type:'conference', partner:'Base44',
+   date:'2026-07-28', time:'17:00',
+   location:'ASE 2026, New York',
+   attendees:['tm-yali','tm-yanivf'],
+   agenda:'🎪 Event / Mingling · 17:00–18:30\nGoal: Mingling\nVertical: AI & Website Builder · Priority: High'},
+
+  // 29 JUL
+  {id:'yali-29jul-petstable', type:'lunch', partner:'The Pets Table',
+   date:'2026-07-29', time:'12:30',
+   location:'ASE 2026, New York',
+   attendees:['tm-yali'],
+   agenda:'🥗 Lunch · 12:30–13:30\nGoal: Strengthen the partnership'},
+];
+SEED_EVENTS.forEach(seed=>{ if(!events.find(e=>e.id===seed.id)){ events.push(seed); } });
+saveData(KEY_EVENTS, events);
+
+// Filter state
+let filterMembers = new Set(['ALL']);
+let filterCats    = new Set(['ALL']);
+let currentView   = 'timeline';
+let editingId     = null;
+let importRows    = [];
+
+// ═══════════════════════════════════════════════════════════
+//  TEAM HELPERS
+// ═══════════════════════════════════════════════════════════
+function getMember(id){ return team.find(m=>m.id===id); }
+function memberColor(id){ const m=getMember(id); return m?m.color:PALETTE[0]; }
+function memberInitials(name){ return name.split(' ').map(p=>p[0]).join('').toUpperCase().slice(0,2); }
+
+// ═══════════════════════════════════════════════════════════
+//  FILTER LOGIC
+// ═══════════════════════════════════════════════════════════
+function toggleMemberFilter(id){
+  if(id==='ALL'){ filterMembers=new Set(['ALL']); }
+  else{
+    filterMembers.delete('ALL');
+    filterMembers.has(id)?filterMembers.delete(id):filterMembers.add(id);
+    if(!filterMembers.size) filterMembers.add('ALL');
+  }
+  document.querySelectorAll('#memberChips .chip').forEach(c=>{
+    c.classList.toggle('active', filterMembers.has(c.dataset.id));
+  });
+  render();
+}
+function toggleCatFilter(cat){
+  if(cat==='ALL'){ filterCats=new Set(['ALL']); }
+  else{
+    filterCats.delete('ALL');
+    filterCats.has(cat)?filterCats.delete(cat):filterCats.add(cat);
+    if(!filterCats.size) filterCats.add('ALL');
+  }
+  document.querySelectorAll('#catChips .chip').forEach(c=>{
+    c.classList.toggle('active', filterCats.has(c.dataset.cat));
+  });
+  render();
+}
+function clearDateFilter(){
+  document.getElementById('filterFrom').value='';
+  document.getElementById('filterTo').value='';
+  render();
+}
+function setView(v){
+  currentView=v;
+  document.querySelectorAll('.view-btn').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
+  ['timeline','byPerson','byCategory'].forEach(n=>{
+    document.getElementById('view-'+n).style.display = n===v?'':'none';
+  });
+  const titles={timeline:'Timeline',byPerson:'By Team Member',byCategory:'By Type'};
+  document.getElementById('viewTitle').textContent = titles[v];
+  render();
+}
+
+function getFiltered(){
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const from   = document.getElementById('filterFrom').value;
+  const to     = document.getElementById('filterTo').value;
+  return events.filter(e=>{
+    if(!filterCats.has('ALL') && !filterCats.has(e.type)) return false;
+    if(!filterMembers.has('ALL') && !e.attendees.some(id=>filterMembers.has(id))) return false;
+    if(from && e.date < from) return false;
+    if(to   && e.date > to)   return false;
+    if(search && ![ e.partner,e.location,e.agenda,(e.attendees||[]).map(id=>{const m=getMember(id);return m?m.name:''}).join(' ')].join(' ').toLowerCase().includes(search)) return false;
+    return true;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RENDER — STATS
+// ═══════════════════════════════════════════════════════════
+function renderStats(){
+  const all = events;
+  const dates = all.map(e=>e.date).filter(Boolean).sort();
+  let range = '—', days = '';
+  if(dates.length){
+    const f=new Date(dates[0]+'T12:00:00'), l=new Date(dates[dates.length-1]+'T12:00:00');
+    const fmt=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    range=fmt(f)+' – '+fmt(l);
+    const n=Math.round((l-f)/86400000)+1;
+    days=n+' day'+(n>1?'s':'');
+  }
+  document.getElementById('statsBar').innerHTML=`
+    <div class="stat"><div class="s-label">Total Events</div><div class="s-val">${all.length}</div><div class="s-sub">all dates</div></div>
+    <div class="stat"><div class="s-label">Team Members</div><div class="s-val" style="color:#818cf8">${team.length}</div><div class="s-sub">in roster</div></div>
+    <div class="stat"><div class="s-label">Meetings</div><div class="s-val" style="color:#818cf8">${all.filter(e=>e.type==='meeting').length}</div><div class="s-sub">scheduled</div></div>
+    <div class="stat"><div class="s-label">Dinners</div><div class="s-val" style="color:#fbbf24">${all.filter(e=>e.type==='dinner').length}</div><div class="s-sub">scheduled</div></div>
+    <div class="stat"><div class="s-label">Date Range</div><div class="s-val" style="font-size:13px;margin-top:8px">${range}</div><div class="s-sub">${days}</div></div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RENDER — EVENT CARD (full)
+// ═══════════════════════════════════════════════════════════
+function renderCard(e){
+  const tm = TYPE_META[e.type]||TYPE_META.other;
+  const timeStr = e.time ? fmtTime(e.time) : 'Time TBD';
+  const attHtml = e.attendees && e.attendees.length
+    ? e.attendees.map(id=>{
+        const m=getMember(id);
+        if(!m) return '';
+        return `<span class="attendee-chip" style="--ac:${m.color}"><span class="attendee-dot" style="background:${m.color}"></span>${m.name}</span>`;
+      }).join('')
+    : '<span style="color:var(--muted2);font-size:12px">Not assigned</span>';
+  return `
+    <div class="event-card ec-type-${e.type}">
+      <div class="ec-top">
+        <div class="ec-meta">
+          <span class="type-pill type-${e.type}">${tm.icon} ${tm.label}</span>
+          <span class="ec-time">⏰ ${timeStr}</span>
+        </div>
+      </div>
+      <div class="ec-title">${esc(e.partner)||'Untitled'}</div>
+      <div class="ec-loc">📍 ${esc(e.location)||'Location TBD'}</div>
+      <div class="ec-body">
+        <div class="ec-field" style="min-width:220px">
+          <div class="fl">Attendees</div>
+          <div class="fv">${attHtml}</div>
+        </div>
+        <div class="ec-field" style="flex:1;min-width:220px">
+          <div class="fl">Agenda</div>
+          <div class="fv">${e.agenda?nl2br(esc(e.agenda)):'<span style="color:var(--muted2)">—</span>'}</div>
+        </div>
+      </div>
+      <div class="ec-actions">
+        <button class="btn btn-ghost btn-sm" onclick="openEventModal('${e.id}')">✏️ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteEvent('${e.id}')">🗑 Delete</button>
+      </div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RENDER — MINI CARD (for by-person view)
+// ═══════════════════════════════════════════════════════════
+function renderMiniCard(e){
+  const tm = TYPE_META[e.type]||TYPE_META.other;
+  const d = new Date(e.date+'T12:00:00');
+  const dateStr = d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  return `
+    <div class="mini-card ec-type-${e.type}" onclick="highlightCard('${e.id}')">
+      <div class="mini-date">${dateStr}</div>
+      <div class="mini-partner">${esc(e.partner)||'Untitled'} <span style="font-size:10px;color:var(--muted);font-weight:400">${tm.icon}</span></div>
+      <div class="mini-loc">📍 ${esc(e.location)||'TBD'}</div>
+      <div class="mini-time">⏰ ${e.time?fmtTime(e.time):'TBD'}</div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  VIEWS
+// ═══════════════════════════════════════════════════════════
+function renderTimeline(){
+  const filtered = getFiltered().sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||''));
+  const groups = {};
+  filtered.forEach(e=>(groups[e.date]=groups[e.date]||[]).push(e));
+  const tl = document.getElementById('view-timeline');
+  if(!filtered.length){ tl.innerHTML=emptyState(); return; }
+  tl.innerHTML = Object.entries(groups).map(([date,evs])=>`
+    <div class="day-group">
+      <div class="day-label">${fmtDayLabel(date)}</div>
+      ${evs.map(e=>renderCard(e)).join('')}
+    </div>`).join('');
+}
+
+function renderByPerson(){
+  const filtered = getFiltered();
+  const container = document.getElementById('view-byPerson');
+  const visibleMembers = filterMembers.has('ALL') ? team : team.filter(m=>filterMembers.has(m.id));
+
+  if(!team.length){
+    container.innerHTML=`<div style="padding:40px;text-align:center;color:var(--muted)"><p>No team members yet.<br>Add team members first using the <strong>Team</strong> button.</p></div>`;
+    return;
+  }
+
+  const cols = visibleMembers.map(m=>{
+    const mEvents = filtered.filter(e=>e.attendees.includes(m.id))
+      .sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||''));
+    const evHtml = mEvents.length
+      ? mEvents.map(e=>renderMiniCard(e)).join('')
+      : `<div class="no-events-msg">No events match current filters</div>`;
+    return `
+      <div class="person-col">
+        <div class="person-header">
+          <div class="person-avatar" style="--pc:${m.color}">${memberInitials(m.name)}</div>
+          <div class="person-name">${esc(m.name)}</div>
+          <div class="person-role">${esc(m.role||'')}</div>
+          <div class="person-count">${mEvents.length} event${mEvents.length!==1?'s':''}</div>
+        </div>
+        <div class="person-events">${evHtml}</div>
+      </div>`;
+  }).join('');
+  container.innerHTML = cols || `<div style="padding:40px;text-align:center;color:var(--muted)">Select team members to display</div>`;
+}
+
+function renderByCategory(){
+  const filtered = getFiltered();
+  const el = document.getElementById('view-byCategory');
+  const visibleCats = filterCats.has('ALL') ? Object.keys(TYPE_META) : [...filterCats];
+  let html='';
+  let any=false;
+  visibleCats.forEach(cat=>{
+    const tm=TYPE_META[cat];
+    const evs=filtered.filter(e=>e.type===cat).sort((a,b)=>a.date.localeCompare(b.date));
+    if(!evs.length) return;
+    any=true;
+    html+=`
+      <div class="cat-section">
+        <div class="cat-header">
+          <span class="cat-icon">${tm.icon}</span>
+          <span class="cat-title">${tm.label}</span>
+          <span class="cat-count">${evs.length} event${evs.length!==1?'s':''}</span>
+        </div>
+        ${evs.map(e=>renderCard(e)).join('')}
+      </div>`;
+  });
+  el.innerHTML = any ? html : emptyState();
+}
+
+function render(){
+  renderStats();
+  if(currentView==='timeline')    renderTimeline();
+  else if(currentView==='byPerson') renderByPerson();
+  else if(currentView==='byCategory') renderByCategory();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  MEMBER CHIPS in filter bar
+// ═══════════════════════════════════════════════════════════
+function rebuildMemberChips(){
+  const bar = document.getElementById('memberChips');
+  bar.innerHTML = `<span class="chip member-chip ${filterMembers.has('ALL')?'active':''}" data-id="ALL" onclick="toggleMemberFilter('ALL')">All members</span>`;
+  team.forEach(m=>{
+    bar.innerHTML += `<span class="chip member-chip ${filterMembers.has(m.id)?'active':''}" data-id="${m.id}" style="--chip-color:${m.color}" onclick="toggleMemberFilter('${m.id}')">${memberInitials(m.name)} ${esc(m.name)}</span>`;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  EVENT MODAL
+// ═══════════════════════════════════════════════════════════
+function openEventModal(id){
+  editingId = id||null;
+  const ev = id ? events.find(e=>e.id===id) : null;
+  document.getElementById('modalEventTitle').textContent = ev ? '✏️ Edit Event' : '➕ Add Event';
+  document.getElementById('f_type').value     = ev?.type     || 'meeting';
+  document.getElementById('f_partner').value  = ev?.partner  || '';
+  document.getElementById('f_date').value     = ev?.date     || '';
+  document.getElementById('f_time').value     = ev?.time     || '';
+  document.getElementById('f_location').value = ev?.location || '';
+  document.getElementById('f_agenda').value   = ev?.agenda   || '';
+  // Build attendee checkboxes
+  const cbs = document.getElementById('f_attendees_cbs');
+  if(!team.length){
+    cbs.innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px 0">No team members yet. Add them via the Team button.</div>';
+  } else {
+    cbs.innerHTML = team.map(m=>`
+      <label class="member-cb">
+        <input type="checkbox" value="${m.id}" ${ev?.attendees?.includes(m.id)?'checked':''}/>
+        <span class="cb-dot" style="background:${m.color}"></span>
+        <span class="cb-name">${esc(m.name)}</span>
+        ${m.role?`<span style="color:var(--muted);font-size:11px;margin-left:4px">${esc(m.role)}</span>`:''}
+      </label>`).join('');
+  }
+  openModal('modalEvent');
+}
+function saveEvent(){
+  const attendees = [...document.querySelectorAll('#f_attendees_cbs input:checked')].map(c=>c.value);
+  const d={
+    id:        editingId||'evt-'+Date.now(),
+    type:      document.getElementById('f_type').value,
+    partner:   document.getElementById('f_partner').value.trim(),
+    date:      document.getElementById('f_date').value,
+    time:      document.getElementById('f_time').value,
+    location:  document.getElementById('f_location').value.trim(),
+    attendees,
+    agenda:    document.getElementById('f_agenda').value.trim(),
+  };
+  if(!d.date){alert('Please select a date.');return;}
+  if(editingId){ const i=events.findIndex(e=>e.id===editingId); if(i>-1)events[i]=d; }
+  else events.push(d);
+  saveData(KEY_EVENTS,events);
+  closeModal('modalEvent');
+  render();
+}
+function deleteEvent(id){
+  if(!confirm('Delete this event?')) return;
+  events=events.filter(e=>e.id!==id);
+  saveData(KEY_EVENTS,events);
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TEAM MODAL
+// ═══════════════════════════════════════════════════════════
+let selectedColor = PALETTE[0];
+function openTeamModal(){
+  renderTeamList();
+  renderColorPicker();
+  openModal('modalTeam');
+}
+function renderTeamList(){
+  const el=document.getElementById('teamList');
+  if(!team.length){ el.innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">No team members yet</div>'; return; }
+  el.innerHTML=team.map(m=>`
+    <div class="team-item">
+      <div class="team-item-avatar" style="background:${m.color}">${memberInitials(m.name)}</div>
+      <div class="team-item-info">
+        <div class="team-item-name">${esc(m.name)}</div>
+        <div class="team-item-role">${esc(m.role||'—')}</div>
+      </div>
+      <div class="team-item-actions">
+        <button class="btn btn-danger btn-xs" onclick="removeTeamMember('${m.id}')">✕</button>
+      </div>
+    </div>`).join('');
+}
+function renderColorPicker(){
+  const cp=document.getElementById('tmColorPicker');
+  cp.innerHTML=PALETTE.map(c=>`
+    <div class="color-swatch ${c===selectedColor?'selected':''}" style="background:${c}" onclick="pickColor('${c}')"></div>`).join('');
+}
+function pickColor(c){
+  selectedColor=c;
+  renderColorPicker();
+}
+function addTeamMember(){
+  const name=document.getElementById('tm_name').value.trim();
+  if(!name){alert('Enter a name.');return;}
+  const m={id:'tm-'+Date.now(),name,role:document.getElementById('tm_role').value.trim(),color:selectedColor};
+  team.push(m);
+  saveData(KEY_TEAM,team);
+  document.getElementById('tm_name').value='';
+  document.getElementById('tm_role').value='';
+  selectedColor=PALETTE[team.length%PALETTE.length];
+  renderTeamList();
+  renderColorPicker();
+  rebuildMemberChips();
+  render();
+}
+function removeTeamMember(id){
+  if(!confirm('Remove this team member?')) return;
+  team=team.filter(m=>m.id!==id);
+  saveData(KEY_TEAM,team);
+  events.forEach(e=>{ e.attendees=e.attendees.filter(a=>a!==id); });
+  saveData(KEY_EVENTS,events);
+  filterMembers.delete(id);
+  if(!filterMembers.size) filterMembers.add('ALL');
+  renderTeamList();
+  rebuildMemberChips();
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  IMPORT MODAL
+// ═══════════════════════════════════════════════════════════
+function openImportModal(){
+  importRows=[];
+  document.getElementById('importStatus').style.display='none';
+  document.getElementById('importPreviewWrap').style.display='none';
+  document.getElementById('importConfirmBtn').style.display='none';
+  document.getElementById('fileInput').value='';
+  // Populate assign dropdown
+  const sel=document.getElementById('importAssignTo');
+  sel.innerHTML='<option value="">— Auto-detect from attendees column —</option>'+
+    team.map(m=>`<option value="${m.id}">${esc(m.name)}</option>`).join('');
+  openModal('modalImport');
+}
+function handleDragOver(e){ e.preventDefault(); document.getElementById('importZone').classList.add('drag'); }
+function handleDrop(e){ e.preventDefault(); document.getElementById('importZone').classList.remove('drag'); const f=e.dataTransfer.files[0]; if(f) processFile(f); }
+function handleFileSelect(e){ const f=e.target.files[0]; if(f) processFile(f); }
+
+function processFile(file){
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      let rows;
+      if(file.name.endsWith('.csv')){
+        rows = parseCSV(ev.target.result);
+      } else {
+        const wb=XLSX.read(ev.target.result,{type:'binary'});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        rows=XLSX.utils.sheet_to_json(ws,{raw:false,defval:''});
+      }
+      if(!rows||!rows.length){ showImportStatus('err','No data found in file.'); return; }
+      importRows=rows;
+      showImportPreview(rows);
+    }catch(err){ showImportStatus('err','Error reading file: '+err.message); }
+  };
+  if(file.name.endsWith('.csv')) reader.readAsText(file);
+  else reader.readAsBinaryString(file);
+}
+
+function parseCSV(text){
+  const lines=text.trim().split(/\r?\n/);
+  if(lines.length<2) return [];
+  const headers=lines[0].split(',').map(h=>h.replace(/^"|"$/g,'').trim());
+  return lines.slice(1).map(line=>{
+    const vals=line.match(/(".*?"|[^,]+|(?<=,)(?=,)|(?<=,)$|^(?=,))/g)||[];
+    const row={};
+    headers.forEach((h,i)=>{ row[h]=(vals[i]||'').replace(/^"|"$/g,'').trim(); });
+    return row;
+  });
+}
+
+function showImportPreview(rows){
+  const keys=Object.keys(rows[0]);
+  const preview=rows.slice(0,5);
+  const table=`<table>
+    <tr>${keys.map(k=>`<th>${esc(k)}</th>`).join('')}</tr>
+    ${preview.map(r=>`<tr>${keys.map(k=>`<td>${esc(String(r[k]||'').slice(0,40))}</td>`).join('')}</tr>`).join('')}
+  </table>`;
+  document.getElementById('importPreview').innerHTML=table;
+  document.getElementById('importPreviewWrap').style.display='block';
+  document.getElementById('importConfirmBtn').style.display='inline-flex';
+  showImportStatus('ok',`✓ Found ${rows.length} rows. Review below and click Import.`);
+}
+
+// Column detection for Google Calendar / Outlook
+function detectColumns(row){
+  const keys=Object.keys(row).map(k=>k.toLowerCase());
+  const find=(...candidates)=>{
+    for(const k of Object.keys(row)){
+      if(candidates.some(c=>k.toLowerCase().includes(c))) return k;
+    }
+    return null;
+  };
+  return {
+    subject:    find('subject','title','name','summary'),
+    startDate:  find('start date','startdate','date'),
+    startTime:  find('start time','starttime','time'),
+    location:   find('location','venue','place'),
+    description:find('description','notes','body','agenda','details'),
+    attendees:  find('required attendees','attendees','participants','invitees'),
+    categories: find('categories','category','type'),
+  };
+}
+
+function confirmImport(){
+  if(!importRows.length) return;
+  const cols=detectColumns(importRows[0]);
+  const assignTo=document.getElementById('importAssignTo').value;
+  const defaultType=document.getElementById('importDefaultType').value;
+
+  // Detect per-member columns: header exactly matches a team member's name
+  const rowKeys=Object.keys(importRows[0]);
+  const memberCols={};
+  team.forEach(m=>{
+    const col=rowKeys.find(k=>k.trim().toLowerCase()===m.name.toLowerCase());
+    if(col) memberCols[col]=m.id;
+  });
+  const hasMemberCols=Object.keys(memberCols).length>0;
+
+  let imported=0, skipped=0;
+  importRows.forEach((row,i)=>{
+    const subject   = cols.subject    ? (row[cols.subject]||'').trim()     : '';
+    const startDate = cols.startDate  ? (row[cols.startDate]||'').trim()   : '';
+    const startTime = cols.startTime  ? (row[cols.startTime]||'').trim()   : '';
+    const location  = cols.location   ? (row[cols.location]||'').trim()    : '';
+    const desc      = cols.description? (row[cols.description]||'').trim() : '';
+    const catRaw    = cols.categories ? (row[cols.categories]||'').toLowerCase(): '';
+
+    if(!subject && !startDate){ skipped++; return; }
+
+    // Parse date
+    let dateStr='';
+    if(startDate){
+      try{
+        const d=new Date(startDate);
+        if(!isNaN(d)) dateStr=d.toISOString().split('T')[0];
+      }catch{}
+    }
+
+    // Parse time
+    let timeStr='';
+    if(startTime){
+      const tm=startTime.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+      if(tm){
+        let h=parseInt(tm[1]),m=parseInt(tm[2]);
+        const ap=(tm[3]||'').toUpperCase();
+        if(ap==='PM'&&h<12)h+=12;
+        if(ap==='AM'&&h===12)h=0;
+        timeStr=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+      }
+    }
+
+    // Guess type
+    let type=defaultType;
+    if(/dinner|supper/i.test(catRaw+subject)) type='dinner';
+    else if(/lunch|brunch/i.test(catRaw+subject)) type='lunch';
+    else if(/presentation|keynote|demo/i.test(catRaw+subject)) type='presentation';
+    else if(/conference|summit|expo/i.test(catRaw+subject)) type='conference';
+    else if(/travel|flight|hotel|depart|arrive/i.test(catRaw+subject)) type='travel';
+
+    let attendees;
+    if(assignTo){
+      attendees=[assignTo];
+    } else if(hasMemberCols){
+      attendees=Object.entries(memberCols)
+        .filter(([col])=>/^yes$/i.test((row[col]||'').trim()))
+        .map(([,id])=>id);
+    } else {
+      attendees=[];
+    }
+
+    events.push({
+      id:'imp-'+Date.now()+'-'+i,
+      type, partner:subject||'Imported Event',
+      date:dateStr, time:timeStr,
+      location, attendees, agenda:desc,
+    });
+    imported++;
+  });
+
+  saveData(KEY_EVENTS,events);
+  closeModal('modalImport');
+  render();
+  if(skipped) showToast(`Imported ${imported} events (${skipped} skipped — missing title/date).`);
+  else showToast(`✓ Imported ${imported} events successfully!`);
+}
+
+function showImportStatus(type,msg){
+  const el=document.getElementById('importStatus');
+  el.className='import-status '+type;
+  el.textContent=msg;
+  el.style.display='block';
+}
+
+// ═══════════════════════════════════════════════════════════
+//  MODAL HELPERS
+// ═══════════════════════════════════════════════════════════
+function openModal(id){  document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',function(e){ if(e.target===this) this.classList.remove('open'); }));
+
+// Toast
+function showToast(msg){
+  let t=document.getElementById('toast');
+  if(!t){ t=document.createElement('div'); t.id='toast';
+    Object.assign(t.style,{position:'fixed',bottom:'24px',right:'24px',background:'#22c55e',color:'#fff',padding:'10px 18px',borderRadius:'8px',fontSize:'13px',fontWeight:'600',zIndex:'999',boxShadow:'0 4px 20px rgba(0,0,0,.4)',transition:'opacity .3s'});
+    document.body.appendChild(t); }
+  t.textContent=msg; t.style.opacity='1';
+  clearTimeout(t._timer);
+  t._timer=setTimeout(()=>t.style.opacity='0',3000);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  UTILITIES
+// ═══════════════════════════════════════════════════════════
+function fmtTime(t){
+  const [h,m]=t.split(':').map(Number);
+  const ap=h>=12?'PM':'AM';
+  return `${h%12||12}:${String(m).padStart(2,'0')} ${ap}`;
+}
+function fmtDayLabel(dateStr){
+  const d=new Date(dateStr+'T12:00:00');
+  const today=new Date();
+  const isToday=d.toDateString()===today.toDateString();
+  const label=d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  return label+(isToday?' <span class="today-badge">TODAY</span>':'');
+}
+function emptyState(){ return `<div class="empty"><div class="icon">📭</div><p>No events match the current filters.</p></div>`; }
+function esc(s){ if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function nl2br(s){ return s.replace(/\n/g,'<br>'); }
+function highlightCard(id){ /* scroll/focus in timeline */ setView('timeline'); setTimeout(()=>{const el=document.querySelector(`[onclick*="${id}"]`);if(el)el.closest('.event-card')?.scrollIntoView({behavior:'smooth',block:'center'});},100); }
+
+// ═══════════════════════════════════════════════════════════
+//  AUTH
+// ═══════════════════════════════════════════════════════════
+const GOOGLE_CLIENT_ID = '126182018463-tk1e3f4b1gpf8r9o56gu0dujfqjvbog3.apps.googleusercontent.com';
+const AUTH_KEY  = 'ase_auth_v1';
+const AUTH_DAYS = 7;
+
+function checkAuth(){
+  try{
+    const s = JSON.parse(localStorage.getItem(AUTH_KEY)||'null');
+    if(s && s.email && s.exp > Date.now()) return s.email;
+  }catch{}
+  return null;
+}
+
+function parseJWT(token){
+  const b64 = token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+  return JSON.parse(atob(b64));
+}
+
+function onGoogleToken(response){
+  const payload = parseJWT(response.credential);
+  const email   = (payload.email||'').toLowerCase();
+  if(email.endsWith('@spotower.com')){
+    localStorage.setItem(AUTH_KEY, JSON.stringify({email, exp: Date.now() + AUTH_DAYS*86400000}));
+    showDashboard(email);
+  } else {
+    const err = document.getElementById('loginError');
+    err.textContent = `Access denied: ${payload.email} is not a @spotower.com account.`;
+    err.classList.add('show');
+  }
+}
+
+function initGoogleAuth(){
+  google.accounts.id.initialize({client_id: GOOGLE_CLIENT_ID, callback: onGoogleToken});
+  google.accounts.id.renderButton(
+    document.getElementById('g_id_signin'),
+    {theme:'outline', size:'large', width:280}
+  );
+}
+
+function showDashboard(email){
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('userBadge').classList.add('show');
+  document.getElementById('userEmail').textContent = email;
+  document.getElementById('btnLogout').style.display = '';
+  rebuildMemberChips();
+  render();
+}
+
+function logout(){
+  localStorage.removeItem(AUTH_KEY);
+  if(window.google && google.accounts) google.accounts.id.disableAutoSelect();
+  location.reload();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════
+const _authEmail = checkAuth();
+if(_authEmail){
+  showDashboard(_authEmail);
+} else {
+  // Poll until Google Identity Services SDK is ready
+  (function waitForGIS(){
+    if(window.google && google.accounts){ initGoogleAuth(); }
+    else { setTimeout(waitForGIS, 150); }
+  })();
+}
+</script>
+</body>
+</html>
