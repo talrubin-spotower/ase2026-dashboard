@@ -115,6 +115,7 @@ header{
 
 /* ══ TIMELINE VIEW ══ */
 .day-group{margin-bottom:20px}
+.day-group+.day-group{border-top:2px dashed var(--border2);padding-top:24px}
 .day-label{
   font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;
   color:var(--muted);padding:0 0 8px 2px;
@@ -163,6 +164,18 @@ header{
 .type-conference {background:#f0f9ff;color:#0369a1} .ec-type-conference {--left-color:#0ea5e9}
 .type-travel     {background:#f0fdf9;color:#0f766e} .ec-type-travel     {--left-color:#10b981}
 .type-other      {background:#f5f5f8;color:var(--muted)} .ec-type-other  {--left-color:var(--muted)}
+
+/* Card backgrounds by type */
+.event-card.ec-type-meeting,  .mini-card.ec-type-meeting     {background:#dde3ff!important}
+.event-card.ec-type-dinner,   .mini-card.ec-type-dinner      {background:#fef3c7!important}
+.event-card.ec-type-lunch,    .mini-card.ec-type-lunch       {background:#dcfce7!important}
+.event-card.ec-type-presentation,.mini-card.ec-type-presentation{background:#f3e8ff!important}
+.event-card.ec-type-conference,.mini-card.ec-type-conference  {background:#e0f2fe!important}
+.event-card.ec-type-travel,   .mini-card.ec-type-travel      {background:#ccfbf1!important}
+.event-card.ec-type-other,    .mini-card.ec-type-other       {background:#f1f1f5!important}
+
+/* Day divider inside By Person columns */
+.mini-day-divider{border-top:2px dashed var(--border2);margin:10px 0}
 
 /* ══ BY PERSON VIEW ══ */
 #view-byPerson{
@@ -964,9 +977,16 @@ function renderByPerson(){
   const cols = visibleMembers.map(m=>{
     const mEvents = filtered.filter(e=>e.attendees.includes(m.id))
       .sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||''));
-    const evHtml = mEvents.length
-      ? mEvents.map(e=>renderMiniCard(e)).join('')
-      : `<div class="no-events-msg">No events match current filters</div>`;
+    let evHtml;
+    if(mEvents.length){
+      const groups={};
+      mEvents.forEach(e=>(groups[e.date]=groups[e.date]||[]).push(e));
+      evHtml=Object.entries(groups).map(([,evs],idx)=>
+        (idx>0?'<div class="mini-day-divider"></div>':'')+evs.map(e=>renderMiniCard(e)).join('')
+      ).join('');
+    } else {
+      evHtml=`<div class="no-events-msg">No events match current filters</div>`;
+    }
     return `
       <div class="person-col">
         <div class="person-header">
