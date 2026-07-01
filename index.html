@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>ASE 2026 — Team Schedule Dashboard</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://accounts.google.com/gsi/client" async></script>
 <style>
 :root{
@@ -668,26 +670,35 @@ const TYPE_META = {
   other:        {icon:'📌',label:'Other',       bg:'#1e2030',color:'#7880a8'},
 };
 
-function loadData(key, def){ try{const r=localStorage.getItem(key);return r?JSON.parse(r):def;}catch{return def;} }
-function saveData(key,val){ localStorage.setItem(key,JSON.stringify(val)); }
+// ── Firebase Firestore ──
+firebase.initializeApp({
+  apiKey:"AIzaSyDR8zUF2mOaRaVvpxbHC0S20CIZF909IJs",
+  authDomain:"ase2026-dashboard.firebaseapp.com",
+  projectId:"ase2026-dashboard",
+  storageBucket:"ase2026-dashboard.firebasestorage.app",
+  messagingSenderId:"776845611291",
+  appId:"1:776845611291:web:7d6e5b8d3f33ee002183be"
+});
+const db  = firebase.firestore();
+const DOC = db.collection('ase2026').doc('main');
 
-let team   = loadData(KEY_TEAM, DEFAULT_TEAM);
+function saveData(key,val){
+  if(key===KEY_EVENTS) DOC.update({events:val}).catch(()=>DOC.set({events:val,team},{merge:true}));
+  else                 DOC.update({team:val}).catch(()=>DOC.set({events,team:val},{merge:true}));
+}
+
+let team = [];
 // Seed new team members (merged on every load, never duplicated)
 const SEED_TEAM = [
   {id:'tm-yael',  name:'Yael Yankovich', role:'', color:'#06b6d4'},
   {id:'tm-yogev', name:'Yogev Oz',       role:'', color:'#f97316'},
 ];
-SEED_TEAM.forEach(m=>{ if(!team.find(t=>t.id===m.id)){ team.push(m); } });
-saveData(KEY_TEAM, team);
-let events = loadData(KEY_EVENTS, [
-  {id:'endurance-1',type:'dinner',partner:'ENDURANCE',date:'2026-07-30',time:'19:00',location:'Charlotte, NC',attendees:[],agenda:'Client dinner with ENDURANCE in Charlotte, NC.\nFlight from NYC — short hop.\nDiscuss partnership and upcoming opportunities.'},
-]);
+let events = [];
+let _cloudReady = false;
 
 // ── SEED EVENTS (merged on every load, never duplicated) ──
 // Remove legacy per-person IDs replaced by combined multi-attendee events
 const LEGACY_IDS = ['tal-ey600','tal-ey3','tal-ey2','tal-ey597'];
-events = events.filter(e=>!LEGACY_IDS.includes(e.id));
-
 const SEED_EVENTS = [
 
   // ── 24 JUL · YALI · Outbound (1 day early) ──
@@ -795,15 +806,36 @@ const SEED_EVENTS = [
    attendees:['tm-yali'],
    agenda:'🥗 Lunch · 12:30–13:30\nGoal: Strengthen the partnership'},
 ];
-SEED_EVENTS.forEach(seed=>{ if(!events.find(e=>e.id===seed.id)){ events.push(seed); } });
-saveData(KEY_EVENTS, events);
-
 // Filter state
 let filterMembers = new Set(['ALL']);
 let filterCats    = new Set(['ALL']);
 let currentView   = 'timeline';
 let editingId     = null;
 let importRows    = [];
+
+// ── Real-time Firestore listener ──
+DOC.onSnapshot(snap=>{
+  let save=false;
+  if(!snap.exists){
+    team=[...DEFAULT_TEAM];
+    SEED_TEAM.forEach(m=>{if(!team.find(t=>t.id===m.id))team.push(m);});
+    events=[
+      {id:'endurance-1',type:'dinner',partner:'ENDURANCE',date:'2026-07-30',time:'19:00',location:'Charlotte, NC',attendees:[],agenda:'Client dinner with ENDURANCE in Charlotte, NC.\nFlight from NYC — short hop.\nDiscuss partnership and upcoming opportunities.'},
+      ...SEED_EVENTS
+    ];
+    save=true;
+  } else {
+    const d=snap.data();
+    team  =d.team  ||[...DEFAULT_TEAM];
+    events=(d.events||[]).filter(e=>!LEGACY_IDS.includes(e.id));
+    SEED_TEAM.forEach(m=>{if(!team.find(t=>t.id===m.id)){team.push(m);save=true;}});
+    SEED_EVENTS.forEach(s=>{if(!events.find(e=>e.id===s.id)){events.push(s);save=true;}});
+  }
+  if(save) DOC.set({team,events});
+  _cloudReady=true;
+  rebuildMemberChips();
+  if(checkAuth()) render();
+});
 
 // ═══════════════════════════════════════════════════════════
 //  TEAM HELPERS
@@ -1416,8 +1448,8 @@ function showDashboard(email){
   document.getElementById('userBadge').classList.add('show');
   document.getElementById('userEmail').textContent = email;
   document.getElementById('btnLogout').style.display = '';
-  rebuildMemberChips();
-  render();
+  if(_cloudReady){ rebuildMemberChips(); render(); }
+  // If Firestore not ready yet, onSnapshot will call render() once data arrives
 }
 
 function logout(){
