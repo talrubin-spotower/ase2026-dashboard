@@ -503,13 +503,13 @@ textarea{resize:vertical;min-height:80px}
     <span class="filter-label">Type</span>
     <div class="chip-group" id="catChips">
       <span class="chip active" data-cat="ALL" onclick="toggleCatFilter('ALL')">All types</span>
-      <span class="chip" data-cat="meeting"     onclick="toggleCatFilter('meeting')">💼 Meeting</span>
-      <span class="chip" data-cat="dinner"      onclick="toggleCatFilter('dinner')">🍽 Dinner</span>
-      <span class="chip" data-cat="lunch"       onclick="toggleCatFilter('lunch')">🥗 Lunch</span>
-      <span class="chip" data-cat="presentation"onclick="toggleCatFilter('presentation')">📊 Presentation</span>
-      <span class="chip" data-cat="conference"  onclick="toggleCatFilter('conference')">🎪 Conference</span>
-      <span class="chip" data-cat="travel"      onclick="toggleCatFilter('travel')">✈️ Travel</span>
-      <span class="chip" data-cat="other"       onclick="toggleCatFilter('other')">📌 Other</span>
+      <span class="chip active" data-cat="meeting"     onclick="toggleCatFilter('meeting')">💼 Meeting</span>
+      <span class="chip active" data-cat="dinner"      onclick="toggleCatFilter('dinner')">🍽 Dinner</span>
+      <span class="chip active" data-cat="lunch"       onclick="toggleCatFilter('lunch')">🥗 Lunch</span>
+      <span class="chip active" data-cat="presentation"onclick="toggleCatFilter('presentation')">📊 Presentation</span>
+      <span class="chip active" data-cat="conference"  onclick="toggleCatFilter('conference')">🎪 Conference</span>
+      <span class="chip active" data-cat="travel"      onclick="toggleCatFilter('travel')">✈️ Travel</span>
+      <span class="chip active" data-cat="other"       onclick="toggleCatFilter('other')">📌 Other</span>
     </div>
     <div class="date-inputs" style="margin-left:auto">
       <input type="date" id="filterFrom" onchange="render()" title="From date"/>
@@ -937,26 +937,43 @@ function memberInitials(name){ return name.split(' ').map(p=>p[0]).join('').toUp
 //  FILTER LOGIC
 // ═══════════════════════════════════════════════════════════
 function toggleMemberFilter(id){
-  if(id==='ALL'){ filterMembers=new Set(['ALL']); }
-  else{
-    filterMembers.delete('ALL');
-    filterMembers.has(id)?filterMembers.delete(id):filterMembers.add(id);
-    if(!filterMembers.size) filterMembers.add('ALL');
+  if(id==='ALL'){
+    filterMembers=new Set(['ALL']);
+  } else {
+    if(filterMembers.has('ALL')){
+      // ALL was active → switch to "all except this one"
+      filterMembers=new Set(team.map(m=>m.id).filter(mid=>mid!==id));
+    } else {
+      filterMembers.has(id)?filterMembers.delete(id):filterMembers.add(id);
+      // if nothing left, or everything selected → back to ALL
+      if(!filterMembers.size || team.every(m=>filterMembers.has(m.id)))
+        filterMembers=new Set(['ALL']);
+    }
   }
+  const isAll=filterMembers.has('ALL');
   document.querySelectorAll('#memberChips .chip').forEach(c=>{
-    c.classList.toggle('active', filterMembers.has(c.dataset.id));
+    c.classList.toggle('active', c.dataset.id==='ALL' ? isAll : (isAll||filterMembers.has(c.dataset.id)));
   });
   render();
 }
 function toggleCatFilter(cat){
-  if(cat==='ALL'){ filterCats=new Set(['ALL']); }
-  else{
-    filterCats.delete('ALL');
-    filterCats.has(cat)?filterCats.delete(cat):filterCats.add(cat);
-    if(!filterCats.size) filterCats.add('ALL');
+  const ALL_CATS=Object.keys(TYPE_META);
+  if(cat==='ALL'){
+    filterCats=new Set(['ALL']);
+  } else {
+    if(filterCats.has('ALL')){
+      // ALL was active → switch to "all except this one"
+      filterCats=new Set(ALL_CATS.filter(c=>c!==cat));
+    } else {
+      filterCats.has(cat)?filterCats.delete(cat):filterCats.add(cat);
+      // if nothing left, or everything selected → back to ALL
+      if(!filterCats.size || ALL_CATS.every(c=>filterCats.has(c)))
+        filterCats=new Set(['ALL']);
+    }
   }
+  const isAll=filterCats.has('ALL');
   document.querySelectorAll('#catChips .chip').forEach(c=>{
-    c.classList.toggle('active', filterCats.has(c.dataset.cat));
+    c.classList.toggle('active', c.dataset.cat==='ALL' ? isAll : (isAll||filterCats.has(c.dataset.cat)));
   });
   render();
 }
@@ -1305,9 +1322,10 @@ function render(){
 // ═══════════════════════════════════════════════════════════
 function rebuildMemberChips(){
   const bar = document.getElementById('memberChips');
-  bar.innerHTML = `<span class="chip member-chip ${filterMembers.has('ALL')?'active':''}" data-id="ALL" onclick="toggleMemberFilter('ALL')">All members</span>`;
+  const isAll=filterMembers.has('ALL');
+  bar.innerHTML = `<span class="chip member-chip ${isAll?'active':''}" data-id="ALL" onclick="toggleMemberFilter('ALL')">All members</span>`;
   team.forEach(m=>{
-    bar.innerHTML += `<span class="chip member-chip ${filterMembers.has(m.id)?'active':''}" data-id="${m.id}" style="--chip-color:${m.color}" onclick="toggleMemberFilter('${m.id}')">${memberInitials(m.name)} ${esc(m.name)}</span>`;
+    bar.innerHTML += `<span class="chip member-chip ${isAll||filterMembers.has(m.id)?'active':''}" data-id="${m.id}" style="--chip-color:${m.color}" onclick="toggleMemberFilter('${m.id}')">${memberInitials(m.name)} ${esc(m.name)}</span>`;
   });
 }
 
