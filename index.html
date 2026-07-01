@@ -630,12 +630,14 @@ const KEY_EVENTS = 'ase26_events_v2';
 const KEY_TEAM   = 'ase26_team_v3';
 
 const DEFAULT_TEAM = [
-  {id:'tm-alon',    name:'Alon Moshe',      role:'', color:'#4f6ef7'},
-  {id:'tm-amit',    name:'Amit Abekasis',   role:'', color:'#a855f7'},
-  {id:'tm-tal',     name:'Tal Rubin',       role:'', color:'#f43f5e'},
-  {id:'tm-yali',    name:'Yali Ziv Av',     role:'', color:'#14b8a6'},
-  {id:'tm-yanivbd', name:'Yaniv Ben David', role:'', color:'#22c55e'},
-  {id:'tm-yanivf',  name:'Yaniv Friedman',  role:'', color:'#f59e0b'},
+  {id:'tm-alon',    name:'Alon Moshe',       role:'', color:'#4f6ef7'},
+  {id:'tm-amit',    name:'Amit Abekasis',    role:'', color:'#a855f7'},
+  {id:'tm-tal',     name:'Tal Rubin',        role:'', color:'#f43f5e'},
+  {id:'tm-yali',    name:'Yali Ziv Av',      role:'', color:'#14b8a6'},
+  {id:'tm-yanivbd', name:'Yaniv Ben David',  role:'', color:'#22c55e'},
+  {id:'tm-yanivf',  name:'Yaniv Friedman',   role:'', color:'#f59e0b'},
+  {id:'tm-yael',    name:'Yael Yankovich',   role:'', color:'#06b6d4'},
+  {id:'tm-yogev',   name:'Yogev Oz',         role:'', color:'#f97316'},
 ];
 
 const PALETTE = [
@@ -657,6 +659,13 @@ function loadData(key, def){ try{const r=localStorage.getItem(key);return r?JSON
 function saveData(key,val){ localStorage.setItem(key,JSON.stringify(val)); }
 
 let team   = loadData(KEY_TEAM, DEFAULT_TEAM);
+// Seed new team members (merged on every load, never duplicated)
+const SEED_TEAM = [
+  {id:'tm-yael',  name:'Yael Yankovich', role:'', color:'#06b6d4'},
+  {id:'tm-yogev', name:'Yogev Oz',       role:'', color:'#f97316'},
+];
+SEED_TEAM.forEach(m=>{ if(!team.find(t=>t.id===m.id)){ team.push(m); } });
+saveData(KEY_TEAM, team);
 let events = loadData(KEY_EVENTS, [
   {id:'endurance-1',type:'dinner',partner:'ENDURANCE',date:'2026-07-30',time:'19:00',location:'Charlotte, NC',attendees:[],agenda:'Client dinner with ENDURANCE in Charlotte, NC.\nFlight from NYC — short hop.\nDiscuss partnership and upcoming opportunities.'},
 ]);
