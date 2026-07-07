@@ -206,6 +206,10 @@ header{
 }
 .bp-row-divider .bp-date-cell,
 .bp-row-divider .bp-cell{border-top:2px dashed var(--border2)}
+.bp-time-tick{position:absolute;left:0;right:4px;font-size:9px;font-weight:600;color:var(--muted);transform:translateY(-50%);text-align:right;line-height:1;white-space:nowrap}
+.bp-hour-line{position:absolute;left:0;right:0;border-top:1px solid var(--border);pointer-events:none}
+.bp-hour-line.bp-half{border-top-style:dashed;opacity:.35}
+.bp-event-abs{position:absolute;left:4px;right:4px;z-index:1}
 /* ── Calendar view ─────────────────────────────────────────── */
 #view-calendar{overflow-x:auto}
 .cal-wrap{display:grid;min-width:max-content;position:relative}
@@ -1106,6 +1110,7 @@ function renderTimeline(){
 }
 
 function renderByPerson(){
+  const HOUR_H=68; // px per hour
   const filtered = getFiltered();
   const container = document.getElementById('view-byPerson');
   const visibleMembers = filterMembers.has('ALL') ? team : team.filter(m=>filterMembers.has(m.id));
@@ -1115,7 +1120,6 @@ function renderByPerson(){
     return;
   }
 
-  // All unique dates that have events for any visible member
   const allDates=[...new Set(
     filtered.filter(e=>e.attendees.some(id=>visibleMembers.some(m=>m.id===id))).map(e=>e.date)
   )].sort();
@@ -1125,10 +1129,28 @@ function renderByPerson(){
     return;
   }
 
-  const n=visibleMembers.length;
-  let html=`<div class="bp-grid" style="grid-template-columns:80px repeat(${n},minmax(220px,1fr))">`;
+  // Compute unified time range per date (across ALL visible members)
+  const dateInfo={};
+  allDates.forEach(date=>{
+    const dayEvs=filtered.filter(e=>e.date===date&&e.time&&e.attendees.some(id=>visibleMembers.some(m=>m.id===id)));
+    if(!dayEvs.length){ dateInfo[date]={minMin:null,rowH:90}; return; }
+    let minMin=23*60, maxMin=0;
+    dayEvs.forEach(e=>{
+      const [h,m]=e.time.split(':').map(Number);
+      const tot=h*60+m;
+      if(tot<minMin) minMin=tot;
+      if(tot+60>maxMin) maxMin=tot+60;
+    });
+    minMin=Math.max(0,minMin-30);
+    maxMin=Math.min(24*60,maxMin+30);
+    dateInfo[date]={minMin,maxMin,rowH:Math.max(110,(maxMin-minMin)/60*HOUR_H)};
+  });
 
-  // Header row: corner + one header per person
+  const n=visibleMembers.length;
+  const gridRows=`auto ${allDates.map(d=>dateInfo[d].rowH+'px').join(' ')}`;
+  let html=`<div class="bp-grid" style="grid-template-columns:80px repeat(${n},minmax(220px,1fr));grid-template-rows:${gridRows}">`;
+
+  // Header row
   html+=`<div class="bp-corner"></div>`;
   visibleMembers.forEach(m=>{
     const total=filtered.filter(e=>e.attendees.includes(m.id)).length;
@@ -1140,19 +1162,57 @@ function renderByPerson(){
     </div>`;
   });
 
-  // One row per date — dashed divider on all rows except first
+  // Date rows with synchronized time axis
   const today=new Date();
   allDates.forEach((date,idx)=>{
     const d=new Date(date+'T12:00:00');
     const isToday=d.toDateString()===today.toDateString();
     const dl=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
     const rowCls=idx>0?'bp-row-divider':'';
+    const {minMin,maxMin,rowH}=dateInfo[date];
 
-    html+=`<div class="bp-date-cell ${rowCls}">${dl}${isToday?'<br><span class="today-badge">TODAY</span>':''}</div>`;
+    // Time-axis cell (left column)
+    let axisTicks='';
+    if(minMin!==null){
+      for(let h=Math.ceil(minMin/60);h<=Math.floor(maxMin/60);h++){
+        const top=(h*60-minMin)/60*HOUR_H;
+        const label=h===0?'12a':h<12?`${h}a`:h===12?'12p':`${h-12}p`;
+        axisTicks+=`<div class="bp-time-tick" style="top:${top}px">${label}</div>`;
+      }
+    }
+    html+=`<div class="bp-date-cell ${rowCls}" style="position:relative;height:${rowH}px;overflow:hidden">
+      <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:6px 4px 4px;line-height:1.4">${dl}${isToday?'<br><span class="today-badge">TODAY</span>':''}</div>
+      ${axisTicks}
+    </div>`;
+
+    // Person cells
     visibleMembers.forEach(m=>{
       const evs=filtered.filter(e=>e.date===date&&e.attendees.includes(m.id))
         .sort((a,b)=>(a.time||'').localeCompare(b.time||''));
-      html+=`<div class="bp-cell ${rowCls}">${evs.map(e=>renderMiniCard(e)).join('')}</div>`;
+
+      let lines='';
+      if(minMin!==null){
+        for(let h=Math.ceil(minMin/60);h<Math.floor(maxMin/60);h++){
+          const top=(h*60-minMin)/60*HOUR_H;
+          lines+=`<div class="bp-hour-line" style="top:${top}px"></div>`;
+          lines+=`<div class="bp-hour-line bp-half" style="top:${top+HOUR_H/2}px"></div>`;
+        }
+      }
+
+      let evHtml='';
+      let noTimeTop=6;
+      evs.forEach(e=>{
+        if(e.time&&minMin!==null){
+          const [h,m]=e.time.split(':').map(Number);
+          const top=(h*60+m-minMin)/60*HOUR_H;
+          evHtml+=`<div class="bp-event-abs" style="top:${top}px">${renderMiniCard(e)}</div>`;
+        } else {
+          evHtml+=`<div class="bp-event-abs" style="top:${noTimeTop}px">${renderMiniCard(e)}</div>`;
+          noTimeTop+=30;
+        }
+      });
+
+      html+=`<div class="bp-cell ${rowCls}" style="position:relative;height:${rowH}px;display:block;padding:0;overflow:visible">${lines}${evHtml}</div>`;
     });
   });
 
