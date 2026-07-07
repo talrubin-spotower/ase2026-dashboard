@@ -938,7 +938,7 @@ function memberInitials(name){ return name.split(' ').map(p=>p[0]).join('').toUp
 // ═══════════════════════════════════════════════════════════
 function toggleMemberFilter(id){
   if(id==='ALL'){
-    filterMembers=new Set(['ALL']);
+    filterMembers = filterMembers.has('ALL') ? new Set() : new Set(['ALL']);
   } else {
     if(filterMembers.has('ALL')){
       // ALL was active → switch to "all except this one"
@@ -959,7 +959,7 @@ function toggleMemberFilter(id){
 function toggleCatFilter(cat){
   const ALL_CATS=Object.keys(TYPE_META);
   if(cat==='ALL'){
-    filterCats=new Set(['ALL']);
+    filterCats = filterCats.has('ALL') ? new Set() : new Set(['ALL']);
   } else {
     if(filterCats.has('ALL')){
       // ALL was active → switch to "all except this one"
