@@ -423,6 +423,72 @@ textarea{resize:vertical;min-height:80px}
   .search-box{width:100%}
 }
 
+/* ── SIDEBAR LAYOUT ────────────────────────────────────────── */
+.app-shell{display:flex;height:100vh;overflow:hidden}
+.sidebar{
+  width:188px;min-width:188px;flex-shrink:0;
+  background:var(--surface);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.sidebar-brand{padding:18px 16px 14px;border-bottom:1px solid var(--border)}
+.sidebar-brand-logo{font-size:17px;font-weight:900;color:var(--accent);letter-spacing:-.5px}
+.sidebar-brand-sub{font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+.sidebar-nav{display:flex;flex-direction:column;padding:10px 8px;gap:2px;flex:1}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;border-radius:8px;
+  border:none;background:transparent;
+  color:var(--text);cursor:pointer;font-size:13px;font-weight:500;
+  text-align:left;width:100%;transition:background .15s,color .15s;
+}
+.nav-item:hover{background:var(--surface2)}
+.nav-item.active{background:var(--accent-soft);color:var(--accent);font-weight:700}
+.nav-icon{font-size:17px;width:22px;text-align:center;flex-shrink:0}
+.sidebar-footer{
+  padding:12px 14px;border-top:1px solid var(--border);
+  font-size:11px;color:var(--muted);display:flex;flex-direction:column;gap:4px;
+}
+.main-area{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
+.tab-wrap{flex:1;overflow-y:auto;overflow-x:hidden}
+/* ── FLIGHTS TAB ────────────────────────────────────────────── */
+.flights-wrap{padding:24px;max-width:860px}
+.flights-day{margin-bottom:28px}
+.flights-day-label{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:10px}
+.flights-day-label::after{content:'';flex:1;height:1px;background:var(--border2)}
+.flight-card{
+  display:flex;align-items:center;gap:16px;
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:14px 18px;margin-bottom:10px;
+  border-left:4px solid var(--accent);
+}
+.flight-num{font-size:14px;font-weight:800;color:var(--accent);min-width:70px}
+.flight-route{flex:1}
+.flight-route-main{font-size:15px;font-weight:700}
+.flight-route-detail{font-size:11px;color:var(--muted);margin-top:2px}
+.flight-time{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap}
+.flight-pax{display:flex;gap:6px;flex-wrap:wrap}
+.flight-pax-chip{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;color:#fff}
+/* ── GUIDELINES TAB ─────────────────────────────────────────── */
+.gl-wrap{padding:28px;max-width:820px}
+.gl-section{margin-bottom:32px}
+.gl-section-title{
+  font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;
+  color:var(--accent);margin-bottom:12px;
+  display:flex;align-items:center;gap:10px;
+}
+.gl-section-title::after{content:'';flex:1;height:2px;background:var(--accent);opacity:.2;border-radius:1px}
+.gl-list{list-style:none;display:flex;flex-direction:column;gap:8px}
+.gl-list li{
+  display:flex;gap:10px;align-items:flex-start;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:9px;padding:10px 14px;font-size:13px;line-height:1.55;
+}
+.gl-list li::before{content:'•';color:var(--accent);font-weight:900;font-size:16px;margin-top:-1px;flex-shrink:0}
+.gl-tag{
+  display:inline-block;font-size:10px;font-weight:700;
+  padding:2px 8px;border-radius:12px;margin-left:6px;
+  background:var(--accent-soft);color:var(--accent);vertical-align:middle;
+}
 /* ── MOBILE: 480px (portrait phones) ── */
 @media(max-width:480px){
   .h-left{gap:8px}
@@ -470,6 +536,31 @@ textarea{resize:vertical;min-height:80px}
   </div>
 </div>
 
+<div class="app-shell" id="app-shell-el" style="display:none">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="sidebar-brand-logo">ASE 2026</div>
+    <div class="sidebar-brand-sub">Team Dashboard</div>
+  </div>
+  <nav class="sidebar-nav">
+    <button class="nav-item active" data-tab="calendar" onclick="switchTab('calendar')">
+      <span class="nav-icon">📅</span> Schedule
+    </button>
+    <button class="nav-item" data-tab="flights" onclick="switchTab('flights')">
+      <span class="nav-icon">✈️</span> Flights
+    </button>
+    <button class="nav-item" data-tab="guidelines" onclick="switchTab('guidelines')">
+      <span class="nav-icon">📋</span> Guidelines
+    </button>
+  </nav>
+  <div class="sidebar-footer" id="sidebarFooter"></div>
+</aside>
+
+<!-- MAIN AREA -->
+<div class="main-area">
+
 <!-- HEADER -->
 <header>
   <div class="h-left">
@@ -489,6 +580,8 @@ textarea{resize:vertical;min-height:80px}
   </div>
 </header>
 
+<div class="tab-wrap">
+<div id="tab-calendar">
 <!-- FILTER BAR -->
 <div class="filter-bar">
   <div class="filter-row">
@@ -548,7 +641,22 @@ textarea{resize:vertical;min-height:80px}
   <div id="view-byCategory" style="display:none"></div>
   <div id="view-calendar" style="display:none"></div>
 
+</div><!-- /mainContent -->
+</div><!-- /tab-calendar -->
+
+<!-- FLIGHTS TAB -->
+<div id="tab-flights" style="display:none">
+  <div class="flights-wrap" id="flightsContent"></div>
 </div>
+
+<!-- GUIDELINES TAB -->
+<div id="tab-guidelines" style="display:none">
+  <div class="gl-wrap" id="guidelinesContent"></div>
+</div>
+
+</div><!-- /tab-wrap -->
+</div><!-- /main-area -->
+</div><!-- /app-shell -->
 
 <!-- ═══════════════════════════════════════════
      MODAL: ADD / EDIT EVENT
@@ -985,6 +1093,173 @@ function clearDateFilter(){
   document.getElementById('filterFrom').value='';
   document.getElementById('filterTo').value='';
   render();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SIDEBAR TAB SWITCHING
+// ═══════════════════════════════════════════════════════════
+function switchTab(tab){
+  ['calendar','flights','guidelines'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display = t===tab?'':'none';
+  });
+  document.querySelectorAll('.nav-item').forEach(b=>{
+    b.classList.toggle('active', b.dataset.tab===tab);
+  });
+  if(tab==='flights')    renderFlights();
+  if(tab==='guidelines') renderGuidelines();
+  if(tab==='calendar')   render();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  FLIGHTS TAB
+// ═══════════════════════════════════════════════════════════
+function renderFlights(){
+  const el=document.getElementById('flightsContent');
+  const flights=events.filter(e=>e.type==='travel').sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||''));
+  if(!flights.length){el.innerHTML=emptyState();return;}
+  const groups={};
+  flights.forEach(e=>(groups[e.date]=groups[e.date]||[]).push(e));
+  const CONF={'2026-07-27':1,'2026-07-28':2};
+  let html='<h2 style="font-size:18px;font-weight:800;margin-bottom:20px">✈️ Team Flights</h2>';
+  Object.entries(groups).forEach(([date,evs])=>{
+    const d=new Date(date+'T12:00:00');
+    const conf=CONF[date];
+    const label=d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+    html+=`<div class="flights-day">
+      <div class="flights-day-label">${label}${conf?` <span class="conf-day-badge">🎪 Day ${conf}</span>`:''}</div>`;
+    evs.forEach(e=>{
+      const parts=e.partner.split('·');
+      const flightNum=(parts[0]||'').trim();
+      const route=(parts[1]||e.partner).trim();
+      const pax=(e.attendees||[]).map(id=>{const m=getMember(id);return m?`<span class="flight-pax-chip" style="background:${m.color}">${memberInitials(m.name)} ${esc(m.name)}</span>`:''}).join('');
+      html+=`<div class="flight-card" onclick="openEventModal('${e.id}')">
+        <div class="flight-num">${esc(flightNum)}</div>
+        <div class="flight-route">
+          <div class="flight-route-main">${esc(route)}</div>
+          ${e.location?`<div class="flight-route-detail">📍 ${esc(e.location)}</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+          ${e.time?`<div class="flight-time">🕐 ${fmtTime(e.time)}</div>`:''}
+          <div class="flight-pax">${pax}</div>
+        </div>
+      </div>`;
+    });
+    html+=`</div>`;
+  });
+  el.innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  GUIDELINES TAB
+// ═══════════════════════════════════════════════════════════
+function renderGuidelines(){
+  const el=document.getElementById('guidelinesContent');
+  if(el.innerHTML.trim()) return; // already rendered
+  el.innerHTML=`
+<h2 style="font-size:18px;font-weight:800;margin-bottom:6px">📋 Conference Playbook</h2>
+<p style="font-size:13px;color:var(--muted);margin-bottom:28px">Lessons learned from ASW '24, ASE '24, ASW '25, ASE '25 — distilled into actionable guidelines.</p>
+
+<div class="gl-section">
+  <div class="gl-section-title">📆 6 Months Before</div>
+  <ul class="gl-list">
+    <li>Review notes and lessons from all previous conferences before planning the next one.</li>
+    <li>Book flights early — overnight flights preferred, especially for the West Coast (better sleep balance on arrival).</li>
+    <li>Book hotels in the name of each attendee, not the company admin.</li>
+  </ul>
+</div>
+
+<div class="gl-section">
+  <div class="gl-section-title">🎟️ 3 Months Before</div>
+  <ul class="gl-list">
+    <li>Lock in special partner experiences for top partners: Broadway shows, sports events (basketball, baseball, football, hockey), concerts — anything with snacks and a beer.</li>
+  </ul>
+</div>
+
+<div class="gl-section">
+  <div class="gl-section-title">📝 1–2 Months Before</div>
+  <ul class="gl-list">
+    <li>Lock in all major meetings: lunches and dinners. Don't leave this for the last minute.</li>
+    <li>Meetings that include Google must be coordinated in advance — agree on the format (when Google presents, how they contribute).</li>
+    <li>Enter every meeting into the planning calendar with the full location (restaurant/venue name), not just the partner name.</li>
+    <li>Download the conference app and browse daily (~30 min). Look for companies in verticals you want to open, not just existing partners.</li>
+  </ul>
+</div>
+
+<div class="gl-section">
+  <div class="gl-section-title">🎯 2 Weeks Before</div>
+  <ul class="gl-list">
+    <li>Set clear, written objectives for every meeting — even relationship-building sessions should have a business agenda.</li>
+    <li>Walk through each meeting agenda with the relevant analyst before the flight — saves time on brainstorming at the conference.</li>
+    <li>Understand what is at risk / will be delayed in day-to-day operations while at the conference and plan a response with other departments.</li>
+    <li>Know your key industry metrics by heart. If there are too many to remember, write down the most important ones.</li>
+  </ul>
+</div>
+
+<div class="gl-section">
+  <div class="gl-section-title">🤝 Meeting Best Practices</div>
+  <ul class="gl-list">
+    <li>Never schedule back-to-back meetings unless absolutely necessary — exhausting and prevents prep for the next one. Leave at least 15 min between meetings.</li>
+    <li><strong>Lunch meetings:</strong> 1–1.5 hrs (2 hrs for key partners). Window: 12:30–14:30. Light food — sushi / Italian. Avoid steakhouses.</li>
+    <li><strong>Evening meetings:</strong> Start at 18:30–19:00. Create a multi-stop experience: cocktail bar → dinner → drinks, or show → bowling/karaoke → drinks.</li>
+    <li>Always include the venue location in the calendar invite. The invite admin must also be a participant so they can make changes on-site.</li>
+    <li>Add your phone number to every invite: <em>"Hi, to make it easier to find each other, here is my phone number: +xxx. What's yours?"</em></li>
+    <li>Cluster meetings geographically — minimize walking distances and avoid being late. Use color coding in Google Calendar (one color per meeting type).</li>
+    <li>Aim to meet key partners on <strong>Sunday</strong> — less formal, great way to get into the conference mood.</li>
+    <li>Write notes after each meeting and send to analysts on the same day, or compile and send at the end of the conference.</li>
+    <li>Arrive 25–30 minutes early. Dressed well. No cigarettes right before.</li>
+    <li>Prioritize longer meetings with significant partners — even if it's not a lunch/dinner, a solid 1-hour meeting beats a rushed 30-min one.</li>
+    <li>Don't hesitate to take a 10-minute Uber to a great venue for an important meeting — atmosphere matters.</li>
+  </ul>
+</div>
+
+<div class="gl-section">
+  <div class="gl-section-title">✨ Partner Experience</div>
+  <ul class="gl-list">
+    <li>Experiential meetings beat standard dinners every time: bowling, sports events, rooftop bars, concerts, karaoke, magic shows.</li>
+    <li>Cross-reference schedules with BizDevs who share a vertical with the partner you're meeting — bring them along.</li>
+    <li>Suite setup on Day 1 (Sunday): duplicate room keys, set up refreshments with proper serving dishes, background music.</li>
+    <li>Hotel lounge is much more convenient than a coffee shop for non-meal meetings — secure enough passes for the whole team in advance.</li>
+    <li>Personal, thoughtful gifts outperform generic ones. Know your POC's birthday — send something to their home.</li>
+    <li>A large team creates a warm, supportive atmosphere. Always have someone with you — it signals strength and culture.</li>
+  </ul>
+</div>
+
+<div class="gl-section">
+  <div class="gl-section-title">🔗 Google Partnership</div>
+  <ul class="gl-list">
+    <li>In joint meetings, have Google join <em>after</em> the initial rapport and numbers discussion — so they reinforce what you've already presented.</li>
+    <li>Align your data to the metrics the partner uses (e.g., for student loans: CTA size = loan size). Come prepared with matching numbers.</li>
+  </ul>
+</div>
+
+<div class="gl-section">
+  <div class="gl-section-title">📊 QBR (Quarterly Business Review)</div>
+  <ul class="gl-list">
+    <li>Run QBRs for your top 2 partners per industry. Ensure senior decision-makers attend: CEO, CMO, VP — not just an affiliate manager.</li>
+    <li>QBR structure: achievements to date → next strategic moves → current obstacles + proposed solutions (black on white).</li>
+    <li>Run a 1-hour simulation beforehand — manager plays devil's advocate on every point. Only proceed if the manager feels fully confident in the readiness.</li>
+    <li>Send the partner a full agenda in advance. Block 2–3 hours on their calendar. Make sure the venue has good acoustics.</li>
+    <li>The BizDev managing the industry leads the QBR — alongside the analyst and a senior company figure.</li>
+  </ul>
+</div>
+
+<div class="gl-section">
+  <div class="gl-section-title">📬 Post-Conference</div>
+  <ul class="gl-list">
+    <li>Send follow-up emails to every partner you met: warm message first ("great to see you, appreciate the partnership"), then business follow-up if applicable.</li>
+    <li>Send meeting summaries to analysts — connecting them to what happened at the conference is critical for team alignment.</li>
+    <li>Set an auto-reply during the conference so team and partners know you're in "conference mode" and response times may vary.</li>
+  </ul>
+</div>
+
+<div class="gl-section">
+  <div class="gl-section-title">💳 Logistics & Financials</div>
+  <ul class="gl-list">
+    <li>Every traveler must have a company credit card in their own name — verify it works before departure.</li>
+    <li>Hotel reservations must be under each attendee's own name, not the company admin's.</li>
+    <li>Leave free time windows in the schedule — useful for responding to analysts back home and staying on top of urgent issues.</li>
+  </ul>
+</div>`;
 }
 function setView(v){
   currentView=v;
@@ -1766,6 +2041,11 @@ function showDashboard(email){
   document.getElementById('userBadge').classList.add('show');
   document.getElementById('userEmail').textContent = email;
   document.getElementById('btnLogout').style.display = '';
+  document.getElementById('sidebarFooter').innerHTML =
+    `<div style="font-weight:600;color:var(--text)">${email.split('@')[0]}</div>
+     <div style="font-size:10px">${email}</div>
+     <button class="btn btn-ghost btn-xs" onclick="logout()" style="margin-top:4px;width:100%">Sign out</button>`;
+  document.getElementById('app-shell-el').style.display='flex';
   if(_cloudReady){ rebuildMemberChips(); render(); }
   // If Firestore not ready yet, onSnapshot will call render() once data arrives
 }
