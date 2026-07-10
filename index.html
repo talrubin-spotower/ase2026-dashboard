@@ -520,6 +520,98 @@ textarea{resize:vertical;min-height:80px}
   .form-group input,.form-group select,.form-group textarea{min-height:44px;font-size:16px}
   .swatch{width:30px!important;height:30px!important}
 }
+
+/* ══════════════════════════════════════════════
+   MOBILE APP LAYOUT (≤768px)
+══════════════════════════════════════════════ */
+@media(max-width:768px){
+  /* Hide desktop elements */
+  .sidebar,.app-shell>*:not(.main-area){display:none!important}
+  header .conf-chip,header .h-title p,header .h-right{display:none!important}
+  header{padding:10px 14px;position:relative}
+  .main-area{display:block!important;overflow:auto;height:100vh;padding-bottom:70px}
+  .tab-wrap{overflow:visible}
+  /* Show mobile header */
+  .mob-header-right{display:flex!important}
+  /* Bottom nav */
+  .mob-bottom-nav{display:flex!important}
+  /* Hide desktop tabs, show mobile view */
+  #tab-calendar,#tab-flights,#tab-guidelines{display:none!important}
+  #mob-view{display:block!important}
+}
+
+/* Mobile bottom nav */
+.mob-bottom-nav{
+  display:none;
+  position:fixed;bottom:0;left:0;right:0;
+  height:64px;
+  background:var(--surface);
+  border-top:1px solid var(--border);
+  z-index:100;
+  justify-content:space-around;align-items:center;
+}
+.mob-nav-btn{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  background:none;border:none;cursor:pointer;
+  font-size:10px;font-weight:600;color:var(--muted);
+  padding:6px 20px;border-radius:12px;transition:color .15s;
+}
+.mob-nav-btn .mob-icon{font-size:22px}
+.mob-nav-btn.active{color:var(--accent)}
+/* Mobile identity picker */
+#mob-identity-screen{
+  display:flex;flex-direction:column;align-items:center;
+  padding:40px 20px;gap:16px;
+}
+.mob-id-title{font-size:20px;font-weight:800;text-align:center}
+.mob-id-sub{font-size:13px;color:var(--muted);text-align:center;max-width:280px}
+.mob-id-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:340px;margin-top:8px}
+.mob-id-btn{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 14px;border-radius:12px;
+  border:2px solid var(--border);background:var(--surface);
+  cursor:pointer;font-size:13px;font-weight:600;
+  transition:border-color .15s,background .15s;
+}
+.mob-id-btn:hover{border-color:var(--accent);background:var(--accent-soft)}
+.mob-id-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+/* Mobile schedule view */
+#mob-view{display:none}
+.mob-schedule{padding:14px}
+.mob-my-name{
+  font-size:16px;font-weight:800;padding:12px 14px 8px;
+  display:flex;align-items:center;gap:8px;
+}
+.mob-day-group{margin-bottom:20px}
+.mob-day-label{
+  font-size:11px;font-weight:800;text-transform:uppercase;
+  letter-spacing:.7px;color:var(--muted);
+  padding:6px 0 8px;border-bottom:1px solid var(--border);
+  margin-bottom:10px;
+}
+.mob-day-label.mob-today{color:var(--accent)}
+.mob-event-row{
+  display:flex;gap:12px;align-items:flex-start;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:12px 14px;margin-bottom:8px;
+  cursor:pointer;transition:box-shadow .15s;
+  border-left:4px solid var(--border2);
+}
+.mob-event-row:active{box-shadow:0 2px 12px rgba(0,0,0,.12)}
+.mob-event-row.has-summary{border-left-color:#22c55e}
+.mob-event-time{font-size:12px;font-weight:700;color:var(--muted);min-width:46px;padding-top:1px}
+.mob-event-body{flex:1;min-width:0}
+.mob-event-title{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mob-event-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.mob-event-badges{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}
+.mob-summary-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0;margin-top:5px}
+/* Mobile person picker */
+.mob-person-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px}
+/* Mobile flights list */
+.mob-flights{padding:14px}
+.mob-team-picker-row{display:flex;align-items:center;gap:8px;padding:14px;border-bottom:1px solid var(--border);overflow-x:auto}
+.mob-team-chip{padding:7px 14px;border-radius:20px;border:2px solid var(--border);background:var(--surface);font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;flex-shrink:0}
+.mob-team-chip.active{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
 </style>
 </head>
 <body>
@@ -658,6 +750,24 @@ textarea{resize:vertical;min-height:80px}
 </div><!-- /main-area -->
 </div><!-- /app-shell -->
 
+<!-- MOBILE VIEW -->
+<div id="mob-view">
+  <div id="mob-schedule-view"></div>
+</div>
+
+<!-- MOBILE BOTTOM NAV -->
+<nav class="mob-bottom-nav">
+  <button class="mob-nav-btn active" data-mob="my" onclick="mobSwitch('my')">
+    <span class="mob-icon">👤</span>שלי
+  </button>
+  <button class="mob-nav-btn" data-mob="team" onclick="mobSwitch('team')">
+    <span class="mob-icon">👥</span>צוות
+  </button>
+  <button class="mob-nav-btn" data-mob="flights" onclick="mobSwitch('flights')">
+    <span class="mob-icon">✈️</span>טיסות
+  </button>
+</nav>
+
 <!-- ═══════════════════════════════════════════
      MODAL: ADD / EDIT EVENT
 ════════════════════════════════════════════ -->
@@ -708,6 +818,12 @@ textarea{resize:vertical;min-height:80px}
     <div class="form-group">
       <label>Agenda / Notes</label>
       <textarea id="f_agenda" placeholder="Key topics, goals, follow-ups..."></textarea>
+    </div>
+  </div>
+  <div class="form-row single">
+    <div class="form-group">
+      <label>📝 Meeting Summary <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);font-size:10px">(fill in after the meeting)</span></label>
+      <textarea id="f_summary" placeholder="What was discussed, decisions made, next steps..." style="min-height:100px;border-color:var(--accent);background:#fafbff"></textarea>
     </div>
   </div>
   <div class="modal-actions">
@@ -1328,6 +1444,7 @@ function renderCard(e){
         <div class="ec-meta">
           <span class="type-pill type-${e.type}">${tm.icon} ${tm.label}</span>
           <span class="ec-time">⏰ ${timeStr}</span>
+          ${e.summary?'<span style="background:#dcfce7;color:#16a34a;font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px">📝 Summarized</span>':''}
         </div>
       </div>
       <div class="ec-title">${esc(e.partner)||'Untitled'}</div>
@@ -1341,6 +1458,10 @@ function renderCard(e){
           <div class="fl">Agenda</div>
           <div class="fv">${e.agenda?nl2br(esc(e.agenda)):'<span style="color:var(--muted2)">—</span>'}</div>
         </div>
+        ${e.summary?`<div class="ec-field" style="flex:1;min-width:220px;border-left:3px solid #22c55e;padding-left:10px">
+          <div class="fl" style="color:#16a34a">📝 Meeting Summary</div>
+          <div class="fv">${nl2br(esc(e.summary))}</div>
+        </div>`:''}
       </div>
       <div class="ec-actions">
         <button class="btn btn-ghost btn-sm" onclick="openEventModal('${e.id}')">✏️ Edit</button>
@@ -1645,11 +1766,167 @@ function renderCalendar(){
 }
 
 function render(){
+  if(isMobile()){mobRender();return;}
   renderStats();
   if(currentView==='timeline')    renderTimeline();
   else if(currentView==='byPerson') renderByPerson();
   else if(currentView==='byCategory') renderByCategory();
   else if(currentView==='calendar') renderCalendar();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  MOBILE HELPERS
+// ═══════════════════════════════════════════════════════════
+const MOB_KEY='ase26_my_member';
+let mobTab='my';
+let mobViewingMember=null; // for team tab
+
+function isMobile(){ return window.innerWidth<=768; }
+
+function mobGetMyMember(){
+  const id=localStorage.getItem(MOB_KEY);
+  return id ? team.find(m=>m.id===id)||null : null;
+}
+
+function mobSwitch(tab){
+  mobTab=tab;
+  document.querySelectorAll('.mob-nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.mob===tab));
+  mobRender();
+}
+
+function mobRender(){
+  const el=document.getElementById('mob-schedule-view');
+  const me=mobGetMyMember();
+  if(!me && mobTab!=='flights'){
+    renderMobIdentityPicker(el); return;
+  }
+  if(mobTab==='my')      renderMobMySchedule(el,me);
+  else if(mobTab==='team') renderMobTeam(el);
+  else if(mobTab==='flights') renderMobFlights(el);
+}
+
+function renderMobIdentityPicker(el){
+  let html=`<div id="mob-identity-screen">
+    <div class="mob-id-title">👋 מי אתה?</div>
+    <div class="mob-id-sub">בחר את השם שלך — נשמר במכשיר</div>
+    <div class="mob-id-grid">`;
+  team.forEach(m=>{
+    html+=`<button class="mob-id-btn" onclick="mobSetMe('${m.id}')">
+      <span class="mob-id-dot" style="background:${m.color}"></span>
+      <span>${esc(m.name.split(' ')[0])}</span>
+    </button>`;
+  });
+  html+=`</div></div>`;
+  el.innerHTML=html;
+}
+
+function mobSetMe(id){
+  localStorage.setItem(MOB_KEY,id);
+  mobViewingMember=null;
+  mobRender();
+}
+
+function renderMobMySchedule(el,member){
+  const myEvents=events.filter(e=>e.attendees&&e.attendees.includes(member.id))
+    .sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||''));
+  const today=new Date();
+  const groups={};
+  myEvents.forEach(e=>(groups[e.date]=groups[e.date]||[]).push(e));
+  const CONF={'2026-07-27':1,'2026-07-28':2};
+  let html=`<div class="mob-my-name">
+    <span style="width:32px;height:32px;border-radius:50%;background:${member.color};display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:13px">${memberInitials(member.name)}</span>
+    ${esc(member.name)}
+    <button onclick="localStorage.removeItem('${MOB_KEY}');mobRender()" style="margin-left:auto;background:none;border:none;font-size:11px;color:var(--muted);cursor:pointer">החלף</button>
+  </div>`;
+  if(!myEvents.length){html+=`<div style="text-align:center;padding:40px;color:var(--muted)">אין אירועים</div>`;}
+  html+=`<div class="mob-schedule">`;
+  Object.entries(groups).forEach(([date,evs])=>{
+    const d=new Date(date+'T12:00:00');
+    const isToday=d.toDateString()===today.toDateString();
+    const conf=CONF[date];
+    const label=d.toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long'});
+    html+=`<div class="mob-day-group">
+      <div class="mob-day-label${isToday?' mob-today':''}">${label}${conf?` · יום ${conf} בכנס`:''}</div>`;
+    evs.forEach(e=>{
+      const tm=TYPE_META[e.type]||TYPE_META.other;
+      html+=`<div class="mob-event-row${e.summary?' has-summary':''}" onclick="openEventModal('${e.id}')">
+        <div class="mob-event-time">${e.time?fmtTime(e.time):'TBD'}</div>
+        <div class="mob-event-body">
+          <div class="mob-event-title">${esc(e.partner)}</div>
+          <div class="mob-event-sub">${tm.icon} ${tm.label}${e.location?' · '+esc(e.location):''}</div>
+          ${e.agenda||e.summary?`<div class="mob-event-badges">
+            ${e.agenda?'<span style="font-size:10px;background:var(--accent-soft);color:var(--accent);padding:2px 7px;border-radius:10px">📋 אג׳נדה</span>':''}
+            ${e.summary?'<span style="font-size:10px;background:#dcfce7;color:#16a34a;padding:2px 7px;border-radius:10px">📝 סוכם</span>':''}
+          </div>`:''}
+        </div>
+        ${e.summary?'<div class="mob-summary-dot"></div>':''}
+      </div>`;
+    });
+    html+=`</div>`;
+  });
+  html+=`</div>`;
+  el.innerHTML=html;
+}
+
+function renderMobTeam(el){
+  const viewing=mobViewingMember||null;
+  // Team chips
+  let html=`<div class="mob-team-picker-row">`;
+  team.forEach(m=>{
+    const active=viewing&&viewing.id===m.id;
+    html+=`<button class="mob-team-chip${active?' active':''}" onclick="mobViewTeamMember('${m.id}')"
+      style="${active?'':''}">
+      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${m.color};margin-right:5px"></span>
+      ${esc(m.name.split(' ')[0])}
+    </button>`;
+  });
+  html+=`</div>`;
+  if(!viewing){
+    html+=`<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px">בחר חבר צוות</div>`;
+  } else {
+    // Render their schedule (read-only)
+    const saved=mobViewingMember;
+    html+=`<div id="mob-team-sched"></div>`;
+    el.innerHTML=html;
+    renderMobMySchedule(document.getElementById('mob-team-sched'),saved);
+    return;
+  }
+  el.innerHTML=html;
+}
+
+function mobViewTeamMember(id){
+  mobViewingMember=team.find(m=>m.id===id)||null;
+  renderMobTeam(document.getElementById('mob-schedule-view'));
+}
+
+function renderMobFlights(el){
+  const flights=events.filter(e=>e.type==='travel').sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||''));
+  if(!flights.length){el.innerHTML=`<div style="text-align:center;padding:40px;color:var(--muted)">אין טיסות</div>`;return;}
+  const groups={};
+  flights.forEach(e=>(groups[e.date]=groups[e.date]||[]).push(e));
+  let html=`<div class="mob-flights">`;
+  Object.entries(groups).forEach(([date,evs])=>{
+    const d=new Date(date+'T12:00:00');
+    const label=d.toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long'});
+    html+=`<div class="mob-day-group"><div class="mob-day-label">${label}</div>`;
+    evs.forEach(e=>{
+      const parts=e.partner.split('·');
+      const num=(parts[0]||'').trim();
+      const route=(parts[1]||e.partner).trim();
+      const pax=(e.attendees||[]).map(id=>{const m=getMember(id);return m?`<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;color:#fff;background:${m.color}">${m.name.split(' ')[0]}</span>`:''}).join('');
+      html+=`<div class="mob-event-row" onclick="openEventModal('${e.id}')">
+        <div class="mob-event-time">${e.time?fmtTime(e.time):'TBD'}</div>
+        <div class="mob-event-body">
+          <div class="mob-event-title">✈️ ${esc(num)}</div>
+          <div class="mob-event-sub">${esc(route)}</div>
+          <div class="mob-event-badges" style="margin-top:5px">${pax}</div>
+        </div>
+      </div>`;
+    });
+    html+=`</div>`;
+  });
+  html+=`</div>`;
+  el.innerHTML=html;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1677,6 +1954,7 @@ function openEventModal(id){
   document.getElementById('f_time').value     = ev?.time     || '';
   document.getElementById('f_location').value = ev?.location || '';
   document.getElementById('f_agenda').value   = ev?.agenda   || '';
+  document.getElementById('f_summary').value  = ev?.summary  || '';
   // Build attendee checkboxes
   const cbs = document.getElementById('f_attendees_cbs');
   if(!team.length){
@@ -1703,6 +1981,7 @@ function saveEvent(){
     location:  document.getElementById('f_location').value.trim(),
     attendees,
     agenda:    document.getElementById('f_agenda').value.trim(),
+    summary:   document.getElementById('f_summary').value.trim(),
   };
   if(!d.date){alert('נא לבחור תאריך.');return;}
   if(!d.partner){alert('נא להזין שם פגישה/חברה.');return;}
