@@ -525,19 +525,19 @@ textarea{resize:vertical;min-height:80px}
    MOBILE APP LAYOUT (≤768px)
 ══════════════════════════════════════════════ */
 @media(max-width:768px){
-  /* Hide desktop elements */
-  .sidebar,.app-shell>*:not(.main-area){display:none!important}
+  /* Collapse app-shell so it doesn't eat the full viewport */
+  .app-shell{height:auto!important;overflow:visible!important;display:block!important}
+  .sidebar{display:none!important}
+  .main-area{height:auto!important;overflow:visible!important;display:block!important}
+  /* Simplify header */
   header .conf-chip,header .h-title p,header .h-right{display:none!important}
-  header{padding:10px 14px;position:relative}
-  .main-area{display:block!important;overflow:auto;height:100vh;padding-bottom:70px}
-  .tab-wrap{overflow:visible}
-  /* Show mobile header */
-  .mob-header-right{display:flex!important}
+  header{padding:10px 16px;position:sticky;top:0;z-index:50}
+  /* Hide all desktop tab content */
+  .tab-wrap{display:none!important}
+  /* Mobile view fills remaining height */
+  #mob-view{display:block!important;min-height:calc(100vh - 56px);padding-bottom:70px}
   /* Bottom nav */
   .mob-bottom-nav{display:flex!important}
-  /* Hide desktop tabs, show mobile view */
-  #tab-calendar,#tab-flights,#tab-guidelines{display:none!important}
-  #mob-view{display:block!important}
 }
 
 /* Mobile bottom nav */
@@ -1832,6 +1832,51 @@ function mobSetMe(id){
   mobRender();
 }
 
+function getETDateStr(){
+  // Returns today's date string in America/New_York timezone
+  return new Date().toLocaleDateString('en-CA',{timeZone:'America/New_York'});
+}
+
+function renderMobDayStatus(member){
+  const etDate=getETDateStr();
+  const CONF_DAYS={'2026-07-27':1,'2026-07-28':2};
+  const confDay=CONF_DAYS[etDate];
+  if(!confDay) return ''; // only show on conference days
+  const todayEvs=events.filter(e=>e.date===etDate&&e.attendees&&e.attendees.includes(member.id));
+  const total=todayEvs.length;
+  const done=todayEvs.filter(e=>e.summary).length;
+  const pct=total?Math.round(done/total*100):0;
+  const next=todayEvs.filter(e=>e.time&&!e.summary).sort((a,b)=>a.time.localeCompare(b.time))[0];
+  const nowET=new Date().toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',hour12:false});
+  let nextHtml='';
+  if(next){
+    const [h,m]=next.time.split(':').map(Number);
+    const nowMins=parseInt(nowET.split(':')[0])*60+parseInt(nowET.split(':')[1]);
+    const evMins=h*60+m;
+    const diff=evMins-nowMins;
+    const diffStr=diff>0?`in ${diff>=60?Math.floor(diff/60)+'h '+diff%60+'m':diff+'m'}`:'now';
+    nextHtml=`<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.25);font-size:12px;opacity:.9">
+      Next: <strong>${esc(next.partner)}</strong> · ${fmtTime(next.time)} (${diffStr})
+    </div>`;
+  }
+  return `<div style="background:var(--accent);color:#fff;border-radius:14px;padding:14px 16px;margin:12px 14px 0">
+    <div style="font-size:11px;font-weight:700;opacity:.8;text-transform:uppercase;letter-spacing:.6px">🎪 ASE Day ${confDay}</div>
+    <div style="display:flex;align-items:center;gap:12px;margin-top:6px">
+      <div>
+        <div style="font-size:28px;font-weight:900;line-height:1">${done}/${total}</div>
+        <div style="font-size:11px;opacity:.8">meetings summarized</div>
+      </div>
+      <div style="flex:1">
+        <div style="background:rgba(255,255,255,.25);border-radius:20px;height:8px;overflow:hidden">
+          <div style="background:#fff;height:100%;width:${pct}%;border-radius:20px;transition:width .4s"></div>
+        </div>
+        <div style="font-size:10px;opacity:.75;margin-top:4px">${pct}% complete</div>
+      </div>
+    </div>
+    ${nextHtml}
+  </div>`;
+}
+
 function renderMobMySchedule(el,member){
   const myEvents=events.filter(e=>e.attendees&&e.attendees.includes(member.id))
     .sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||''));
@@ -1842,8 +1887,8 @@ function renderMobMySchedule(el,member){
   let html=`<div class="mob-my-name">
     <span style="width:32px;height:32px;border-radius:50%;background:${member.color};display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:13px">${memberInitials(member.name)}</span>
     ${esc(member.name)}
-    <button onclick="localStorage.removeItem('${MOB_KEY}');mobRender()" style="margin-left:auto;background:none;border:none;font-size:11px;color:var(--muted);cursor:pointer">החלף</button>
-  </div>`;
+  </div>
+  ${renderMobDayStatus(member)}`;
   if(!myEvents.length){html+=`<div style="text-align:center;padding:40px;color:var(--muted)">אין אירועים</div>`;}
   html+=`<div class="mob-schedule">`;
   Object.entries(groups).forEach(([date,evs])=>{
