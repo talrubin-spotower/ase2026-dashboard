@@ -804,8 +804,12 @@ textarea{resize:vertical;min-height:80px}
       <input type="date" id="f_date"/>
     </div>
     <div class="form-group">
-      <label>Time</label>
+      <label>Start Time</label>
       <input type="time" id="f_time"/>
+    </div>
+    <div class="form-group">
+      <label>End Time</label>
+      <input type="time" id="f_time_end"/>
     </div>
   </div>
   <div class="form-row single">
@@ -1436,7 +1440,7 @@ function renderStats(){
 // ═══════════════════════════════════════════════════════════
 function renderCard(e){
   const tm = TYPE_META[e.type]||TYPE_META.other;
-  const timeStr = e.time ? fmtTime(e.time) : 'Time TBD';
+  const timeStr = e.time ? (fmtTime(e.time) + (e.timeEnd ? ' – ' + fmtTime(e.timeEnd) : '')) : 'Time TBD';
   const attHtml = e.attendees && e.attendees.length
     ? e.attendees.map(id=>{
         const m=getMember(id);
@@ -1488,7 +1492,7 @@ function renderMiniCard(e){
       <div class="mini-date">${dateStr}</div>
       <div class="mini-partner">${esc(e.partner)||'Untitled'} <span style="font-size:10px;color:var(--muted);font-weight:400">${tm.icon}</span></div>
       <div class="mini-loc">📍 ${esc(e.location)||'TBD'}</div>
-      <div class="mini-time">⏰ ${e.time?fmtTime(e.time):'TBD'}</div>
+      <div class="mini-time">⏰ ${e.time?(fmtTime(e.time)+(e.timeEnd?' – '+fmtTime(e.timeEnd):'')):'TBD'}</div>
     </div>`;
 }
 
@@ -1724,7 +1728,9 @@ function renderCalendar(){
     dayEvs.forEach(ev=>{
       const [eh,em]=ev.time.split(':').map(Number);
       const startMin=(eh-minH)*60+em;
-      const endMin=startMin+60; // assume 1hr duration
+      const endMin=ev.timeEnd
+        ? (()=>{const[th,tm]=ev.timeEnd.split(':').map(Number);return(th-minH)*60+tm;})()
+        : startMin+60; // default 1hr if no end time
       // Find overlapping group
       let col=0;
       const overlapping=placed.filter(p=>p.startMin<endMin&&p.endMin>startMin);
@@ -1907,7 +1913,7 @@ function renderMobMySchedule(el,member){
     evs.forEach(e=>{
       const tm=TYPE_META[e.type]||TYPE_META.other;
       html+=`<div class="mob-event-row${e.summary?' has-summary':''}" onclick="openEventModal('${e.id}')">
-        <div class="mob-event-time">${e.time?fmtTime(e.time):'TBD'}</div>
+        <div class="mob-event-time">${e.time?(fmtTime(e.time)+(e.timeEnd?'–'+fmtTime(e.timeEnd):'')):'TBD'}</div>
         <div class="mob-event-body">
           <div class="mob-event-title">${esc(e.partner)}</div>
           <div class="mob-event-sub">${tm.icon} ${tm.label}${e.location?' · '+esc(e.location):''}</div>
@@ -2009,6 +2015,7 @@ function openEventModal(id){
   document.getElementById('f_partner').value  = ev?.partner  || '';
   document.getElementById('f_date').value     = ev?.date     || '';
   document.getElementById('f_time').value     = ev?.time     || '';
+  document.getElementById('f_time_end').value = ev?.timeEnd  || '';
   document.getElementById('f_location').value = ev?.location || '';
   document.getElementById('f_agenda').value   = ev?.agenda   || '';
   document.getElementById('f_summary').value  = ev?.summary  || '';
@@ -2035,6 +2042,7 @@ function saveEvent(){
     partner:   document.getElementById('f_partner').value.trim(),
     date:      document.getElementById('f_date').value,
     time:      document.getElementById('f_time').value,
+    timeEnd:   document.getElementById('f_time_end').value,
     location:  document.getElementById('f_location').value.trim(),
     attendees,
     agenda:    document.getElementById('f_agenda').value.trim(),
