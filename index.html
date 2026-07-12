@@ -184,20 +184,26 @@ header{
 .event-card.ec-type-other,    .mini-card.ec-type-other       {background:#f1f1f5!important}
 
 /* ══ BY PERSON VIEW — synchronized grid ══ */
-#view-byPerson{overflow-x:auto;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+#view-byPerson{
+  overflow:auto; /* both axes — required for sticky to work inside */
+  max-height:calc(100vh - 270px);
+  border:1px solid var(--border);border-radius:12px;background:var(--surface);
+}
 .bp-grid{display:grid;min-width:max-content;width:100%}
 .bp-corner{
-  background:var(--surface2);position:sticky;top:0;z-index:3;
-  border-bottom:1px solid var(--border);border-right:1px solid var(--border);
+  background:var(--surface2);
+  position:sticky;top:0;left:0;z-index:4; /* frozen top-left corner */
+  border-bottom:2px solid var(--border2);border-right:1px solid var(--border);
 }
 .bp-col-header{
   padding:14px 16px;background:var(--surface2);
-  position:sticky;top:0;z-index:2;
-  border-bottom:1px solid var(--border);border-right:1px solid var(--border);
+  position:sticky;top:0;z-index:3; /* frozen top row */
+  border-bottom:2px solid var(--border2);border-right:1px solid var(--border);
 }
 .bp-date-cell{
   padding:10px 8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
   color:var(--muted);background:var(--surface2);
+  position:sticky;left:0;z-index:2; /* frozen left column */
   border-right:1px solid var(--border);line-height:1.5;
 }
 .bp-cell{
