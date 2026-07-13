@@ -2055,7 +2055,7 @@ function saveEvent(){
   closeModal('modalEvent');
   render();
   saveData(KEY_EVENTS,events);
-  ensureCalToken(() => calSyncEvent(d));
+  if(_calToken) calSyncEvent(d); // sync only if already authorized
 }
 function deleteEvent(id){
   if(!confirm('Delete this event?')) return;
