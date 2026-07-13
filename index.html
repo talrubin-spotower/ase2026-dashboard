@@ -2055,9 +2055,11 @@ function saveEvent(){
   closeModal('modalEvent');
   render();
   saveData(KEY_EVENTS,events);
+  ensureCalToken(() => calSyncEvent(d));
 }
 function deleteEvent(id){
   if(!confirm('Delete this event?')) return;
+  calDeleteEvent(id);
   events=events.filter(e=>e.id!==id);
   saveData(KEY_EVENTS,events);
   render();
@@ -2340,6 +2342,87 @@ function nl2br(s){ return s.replace(/\n/g,'<br>'); }
 function highlightCard(id){ /* scroll/focus in timeline */ setView('timeline'); setTimeout(()=>{const el=document.querySelector(`[onclick*="${id}"]`);if(el)el.closest('.event-card')?.scrollIntoView({behavior:'smooth',block:'center'});},100); }
 
 // ═══════════════════════════════════════════════════════════
+//  GOOGLE CALENDAR SYNC
+// ═══════════════════════════════════════════════════════════
+const GCAL_CLIENT_ID = '793341349371-dbni7av1aaql835epmp0203appf15e3d.apps.googleusercontent.com';
+let _calToken = null;
+let _calTokenClient = null;
+let _calEventMap = {};
+
+function _loadCalMap(){ try{ _calEventMap=JSON.parse(localStorage.getItem('ase26_calmap')||'{}'); }catch{ _calEventMap={}; } }
+function _saveCalMap(){ localStorage.setItem('ase26_calmap',JSON.stringify(_calEventMap)); }
+
+function initCalendarSync(){
+  if(!window.google?.accounts?.oauth2) return;
+  _loadCalMap();
+  _calTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GCAL_CLIENT_ID,
+    scope: 'https://www.googleapis.com/auth/calendar.events',
+    callback: r => { _calToken = r.error ? null : r.access_token; },
+  });
+}
+
+function ensureCalToken(cb){
+  if(_calToken){ cb(); return; }
+  if(!_calTokenClient){ console.warn('Calendar not initialized'); return; }
+  const orig = _calTokenClient.callback;
+  _calTokenClient.callback = r => { orig(r); if(!r.error) cb(); };
+  _calTokenClient.requestAccessToken({ prompt:'' });
+}
+
+async function _calFetch(method, path, body){
+  const res = await fetch('https://www.googleapis.com/calendar/v3'+path,{
+    method,
+    headers:{ Authorization:'Bearer '+_calToken, 'Content-Type':'application/json' },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if(res.status===204 || method==='DELETE') return null;
+  return res.json();
+}
+
+function _buildCalEvent(ev){
+  const LABELS = { meeting:'Meeting', lunch:'Lunch', dinner:'Dinner', meal:'Meal', session:'Session', other:'Other' };
+  const label  = LABELS[ev.type] || ev.type || 'Event';
+  const title  = ev.partner ? `${label} · ${ev.partner}` : label;
+  const pad    = n => String(n).padStart(2,'0');
+  const [sh,sm] = (ev.time||'09:00').split(':').map(Number);
+  let [eh,em]   = ev.timeEnd ? ev.timeEnd.split(':').map(Number) : [sh+1,sm];
+  if(eh>23){ eh=23; em=59; }
+  return {
+    summary:  title,
+    location: ev.location||'',
+    description: 'ASE 2026',
+    start:{ dateTime:`${ev.date}T${pad(sh)}:${pad(sm)}:00`, timeZone:'America/New_York' },
+    end:  { dateTime:`${ev.date}T${pad(eh)}:${pad(em)}:00`, timeZone:'America/New_York' },
+  };
+}
+
+async function calSyncEvent(ev){
+  if(!_calToken || !ev?.id) return;
+  const myMember = team.find(m => m.email && m.email.toLowerCase()===(_authEmail||'').toLowerCase());
+  if(!myMember || !ev.attendees?.includes(myMember.id)) return;
+  const body = _buildCalEvent(ev);
+  try{
+    const existId = _calEventMap[ev.id];
+    if(existId){
+      await _calFetch('PATCH',`/calendars/primary/events/${existId}`,body);
+    } else {
+      const created = await _calFetch('POST','/calendars/primary/events',body);
+      if(created?.id){ _calEventMap[ev.id]=created.id; _saveCalMap(); }
+    }
+  }catch(e){ console.error('Calendar sync error:',e); }
+}
+
+async function calDeleteEvent(dashId){
+  const calId = _calEventMap[dashId];
+  if(!calId) return;
+  try{
+    if(_calToken) await _calFetch('DELETE',`/calendars/primary/events/${calId}`);
+    delete _calEventMap[dashId]; _saveCalMap();
+  }catch(e){ console.error('Calendar delete error:',e); }
+}
+
+// ═══════════════════════════════════════════════════════════
 //  AUTH
 // ═══════════════════════════════════════════════════════════
 const GOOGLE_CLIENT_ID = '126182018463-tk1e3f4b1gpf8r9o56gu0dujfqjvbog3.apps.googleusercontent.com';
@@ -2378,6 +2461,7 @@ function initGoogleAuth(){
     document.getElementById('g_id_signin'),
     {theme:'outline', size:'large', width:280}
   );
+  initCalendarSync();
 }
 
 function showDashboard(email){
@@ -2406,6 +2490,10 @@ function logout(){
 const _authEmail = checkAuth();
 if(_authEmail){
   showDashboard(_authEmail);
+  (function waitForGIS(){
+    if(window.google?.accounts?.oauth2){ initCalendarSync(); }
+    else { setTimeout(waitForGIS, 150); }
+  })();
 } else {
   // Poll until Google Identity Services SDK is ready
   (function waitForGIS(){
