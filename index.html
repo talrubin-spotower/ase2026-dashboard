@@ -1723,23 +1723,25 @@ function renderCalendar(){
     const dayEvs=timed.filter(e=>e.date===date).sort((a,b)=>a.time.localeCompare(b.time));
 
     // Detect overlaps: assign left/width fraction
-    // Simple sweep: group overlapping events
+    // Pass 1: assign columns
     const placed=[];
     dayEvs.forEach(ev=>{
       const [eh,em]=ev.time.split(':').map(Number);
       const startMin=(eh-minH)*60+em;
       const endMin=ev.timeEnd
         ? (()=>{const[th,tm]=ev.timeEnd.split(':').map(Number);return(th-minH)*60+tm;})()
-        : startMin+60; // default 1hr if no end time
-      // Find overlapping group
+        : startMin+60;
       let col=0;
       const overlapping=placed.filter(p=>p.startMin<endMin&&p.endMin>startMin);
       const usedCols=new Set(overlapping.map(p=>p.col));
       while(usedCols.has(col)) col++;
-      const maxCols=Math.max(col+1,...overlapping.map(p=>p.maxCols||1));
-      // Update maxCols for overlapping items
-      overlapping.forEach(p=>p.maxCols=maxCols+1);
-      placed.push({ev,startMin,endMin,col,maxCols:maxCols+1});
+      placed.push({ev,startMin,endMin,col,maxCols:1});
+    });
+    // Pass 2: compute correct maxCols per overlap group
+    placed.forEach(p=>{
+      const group=placed.filter(q=>q.startMin<p.endMin&&q.endMin>p.startMin);
+      const cols=Math.max(...group.map(q=>q.col))+1;
+      group.forEach(q=>{ if(cols>q.maxCols) q.maxCols=cols; });
     });
 
     html+=`<div class="cal-day-col" style="height:${bodyH}px;background:${conf?'color-mix(in srgb,var(--accent) 4%,var(--surface))':'var(--surface)'}">`;
