@@ -688,8 +688,8 @@ textarea{resize:vertical;min-height:80px}
       <span class="chip active" data-id="ALL" onclick="toggleMemberFilter('ALL')">All members</span>
     </div>
     <div class="view-toggle" style="margin-left:auto">
-      <button class="view-btn active" data-view="timeline" onclick="setView('timeline')">📋 Timeline</button>
-      <button class="view-btn" data-view="byPerson" onclick="setView('byPerson')">👤 By Person</button>
+      <button class="view-btn" data-view="timeline" onclick="setView('timeline')">📋 Timeline</button>
+      <button class="view-btn active" data-view="byPerson" onclick="setView('byPerson')">👤 By Person</button>
       <button class="view-btn" data-view="byCategory" onclick="setView('byCategory')">🏷 By Type</button>
       <button class="view-btn" data-view="calendar" onclick="setView('calendar')">📅 Calendar</button>
     </div>
@@ -697,13 +697,13 @@ textarea{resize:vertical;min-height:80px}
   <div class="filter-row">
     <span class="filter-label">Type</span>
     <div class="chip-group" id="catChips">
-      <span class="chip active" data-cat="ALL" onclick="toggleCatFilter('ALL')">All types</span>
+      <span class="chip" data-cat="ALL" onclick="toggleCatFilter('ALL')">All types</span>
       <span class="chip active" data-cat="meeting"     onclick="toggleCatFilter('meeting')">💼 Meeting</span>
       <span class="chip active" data-cat="dinner"      onclick="toggleCatFilter('dinner')">🍽 Dinner</span>
       <span class="chip active" data-cat="lunch"       onclick="toggleCatFilter('lunch')">🥗 Lunch</span>
       <span class="chip active" data-cat="presentation"onclick="toggleCatFilter('presentation')">📊 Presentation</span>
       <span class="chip active" data-cat="conference"  onclick="toggleCatFilter('conference')">🎪 Conference</span>
-      <span class="chip active" data-cat="travel"      onclick="toggleCatFilter('travel')">✈️ Travel</span>
+      <span class="chip" data-cat="travel"      onclick="toggleCatFilter('travel')">✈️ Travel</span>
       <span class="chip active" data-cat="other"       onclick="toggleCatFilter('other')">📌 Other</span>
     </div>
     <div class="date-inputs" style="margin-left:auto">
@@ -734,8 +734,8 @@ textarea{resize:vertical;min-height:80px}
   </div>
 
   <!-- Views -->
-  <div id="view-timeline"></div>
-  <div id="view-byPerson" style="display:none"></div>
+  <div id="view-timeline" style="display:none"></div>
+  <div id="view-byPerson"></div>
   <div id="view-byCategory" style="display:none"></div>
   <div id="view-calendar" style="display:none"></div>
 
@@ -1135,8 +1135,8 @@ const SEED_EVENTS = [
 ];
 // Filter state
 let filterMembers = new Set(['ALL']);
-let filterCats    = new Set(['ALL']);
-let currentView   = 'timeline';
+let filterCats    = new Set(['meeting','lunch','dinner','meal','session','presentation','conference','other']);
+let currentView   = 'byPerson';
 let editingId     = null;
 let importRows    = [];
 
