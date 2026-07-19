@@ -427,6 +427,7 @@ textarea{resize:vertical;min-height:80px}
   #mainContent{padding:14px 12px}
   .toolbar{flex-direction:column;align-items:stretch;gap:8px}
   .search-box{width:100%}
+  #btnShowFilter{padding:7px 18px;font-size:14px;border-radius:22px;box-shadow:0 2px 8px rgba(4,83,159,.25)}
 }
 
 /* ── SIDEBAR LAYOUT ────────────────────────────────────────── */
@@ -687,6 +688,7 @@ textarea{resize:vertical;min-height:80px}
     <div class="chip-group" id="memberChips">
       <span class="chip active" data-id="ALL" onclick="toggleMemberFilter('ALL')">All members</span>
     </div>
+    <button id="btnShowFilter" onclick="applyMemberFilter()" style="display:none;margin-right:6px;padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">הצג ✓</button>
     <div class="view-toggle" style="margin-left:auto">
       <button class="view-btn" data-view="timeline" onclick="setView('timeline')">📋 Timeline</button>
       <button class="view-btn active" data-view="byPerson" onclick="setView('byPerson')">👤 By Person</button>
@@ -969,13 +971,63 @@ const db  = firebase.firestore();
 const DOC = db.collection('ase2026').doc('main');
 
 function saveData(key,val){
+  // Legacy: kept for reference but replaced by atomic functions below
   const payload = key===KEY_EVENTS ? {events:val,team} : {events,team:val};
   DOC.set(payload)
     .then(()=>showToast('✅ נשמר בהצלחה!'))
-    .catch(err=>{
-      console.error('✗ Firestore save error:',err);
-      showToast('❌ שגיאת שמירה: '+err.code);
+    .catch(err=>{ console.error('✗ Firestore save error:',err); showToast('❌ שגיאת שמירה: '+err.code); });
+}
+async function saveEvent_atomic(d, wasEditing, oldId){
+  try {
+    await db.runTransaction(async tx => {
+      const snap = await tx.get(DOC);
+      let evs = snap.data()?.events || [];
+      if(wasEditing) evs = evs.map(e => e.id===oldId ? d : e);
+      else evs.push(d);
+      tx.update(DOC, {events:evs});
     });
+    showToast('✅ נשמר בהצלחה!');
+  } catch(err){ console.error(err); showToast('❌ שגיאת שמירה: '+err.code); }
+}
+async function deleteEvent_atomic(id){
+  try {
+    await db.runTransaction(async tx => {
+      const snap = await tx.get(DOC);
+      const evs = (snap.data()?.events || []).filter(e => e.id!==id);
+      tx.update(DOC, {events:evs});
+    });
+  } catch(err){ console.error(err); showToast('❌ שגיאת שמירה: '+err.code); }
+}
+async function addTeamMember_atomic(m){
+  try {
+    await db.runTransaction(async tx => {
+      const snap = await tx.get(DOC);
+      const t = [...(snap.data()?.team || []), m];
+      tx.update(DOC, {team:t});
+    });
+    showToast('✅ נשמר בהצלחה!');
+  } catch(err){ console.error(err); showToast('❌ שגיאת שמירה: '+err.code); }
+}
+async function removeTeamMember_atomic(id){
+  try {
+    await db.runTransaction(async tx => {
+      const snap = await tx.get(DOC);
+      const data = snap.data() || {};
+      const t = (data.team || []).filter(m => m.id!==id);
+      const evs = (data.events || []).map(e => ({...e, attendees:(e.attendees||[]).filter(a=>a!==id)}));
+      tx.update(DOC, {team:t, events:evs});
+    });
+    showToast('✅ נשמר בהצלחה!');
+  } catch(err){ console.error(err); showToast('❌ שגיאת שמירה: '+err.code); }
+}
+async function importEvents_atomic(newEvents){
+  try {
+    await db.runTransaction(async tx => {
+      const snap = await tx.get(DOC);
+      const evs = [...(snap.data()?.events || []), ...newEvents];
+      tx.update(DOC, {events:evs});
+    });
+  } catch(err){ console.error(err); showToast('❌ שגיאת שמירה: '+err.code); }
 }
 
 let team = [];
@@ -1174,24 +1226,45 @@ function memberInitials(name){ return name.split(' ').map(p=>p[0]).join('').toUp
 // ═══════════════════════════════════════════════════════════
 //  FILTER LOGIC
 // ═══════════════════════════════════════════════════════════
-function toggleMemberFilter(id){
+let _pendingFilter = null; // mobile pending selection (null = not active)
+function _applyFilterSet(target, id){
   if(id==='ALL'){
-    filterMembers = filterMembers.has('ALL') ? new Set() : new Set(['ALL']);
+    return target.has('ALL') ? new Set() : new Set(['ALL']);
   } else {
-    if(filterMembers.has('ALL')){
-      // ALL was active → switch to "all except this one"
-      filterMembers=new Set(team.map(m=>m.id).filter(mid=>mid!==id));
+    const next = new Set(target);
+    if(next.has('ALL')){
+      return new Set(team.map(m=>m.id).filter(mid=>mid!==id));
     } else {
-      filterMembers.has(id)?filterMembers.delete(id):filterMembers.add(id);
-      // if nothing left, or everything selected → back to ALL
-      if(!filterMembers.size || team.every(m=>filterMembers.has(m.id)))
-        filterMembers=new Set(['ALL']);
+      next.has(id) ? next.delete(id) : next.add(id);
+      if(!next.size || team.every(m=>next.has(m.id))) return new Set(['ALL']);
+      return next;
     }
   }
-  const isAll=filterMembers.has('ALL');
+}
+function _updateChipVisuals(fs){
+  const isAll=fs.has('ALL');
   document.querySelectorAll('#memberChips .chip').forEach(c=>{
-    c.classList.toggle('active', c.dataset.id==='ALL' ? isAll : (isAll||filterMembers.has(c.dataset.id)));
+    c.classList.toggle('active', c.dataset.id==='ALL' ? isAll : (isAll||fs.has(c.dataset.id)));
   });
+}
+function toggleMemberFilter(id){
+  const isMobile = window.innerWidth < 768;
+  if(isMobile){
+    if(_pendingFilter===null) _pendingFilter = new Set(filterMembers);
+    _pendingFilter = _applyFilterSet(_pendingFilter, id);
+    _updateChipVisuals(_pendingFilter);
+    document.getElementById('btnShowFilter').style.display='inline-flex';
+  } else {
+    _pendingFilter = null;
+    filterMembers = _applyFilterSet(filterMembers, id);
+    _updateChipVisuals(filterMembers);
+    document.getElementById('btnShowFilter').style.display='none';
+    render();
+  }
+}
+function applyMemberFilter(){
+  if(_pendingFilter!==null){ filterMembers=_pendingFilter; _pendingFilter=null; }
+  document.getElementById('btnShowFilter').style.display='none';
   render();
 }
 function toggleCatFilter(cat){
@@ -2052,18 +2125,19 @@ function saveEvent(){
   };
   if(!d.date){alert('נא לבחור תאריך.');return;}
   if(!d.partner){alert('נא להזין שם פגישה/חברה.');return;}
-  if(editingId){ const i=events.findIndex(e=>e.id===editingId); if(i>-1)events[i]=d; }
+  const wasEditing=!!editingId; const oldId=editingId;
+  if(wasEditing){ const i=events.findIndex(e=>e.id===oldId); if(i>-1)events[i]=d; }
   else events.push(d);
   closeModal('modalEvent');
   render();
-  saveData(KEY_EVENTS,events);
+  saveEvent_atomic(d, wasEditing, oldId);
   if(_calToken) calSyncEvent(d); // sync only if already authorized
 }
 function deleteEvent(id){
   if(!confirm('Delete this event?')) return;
   calDeleteEvent(id);
   events=events.filter(e=>e.id!==id);
-  saveData(KEY_EVENTS,events);
+  deleteEvent_atomic(id);
   render();
 }
 
