@@ -846,6 +846,41 @@ textarea{resize:vertical;min-height:80px}
 </div>
 
 <!-- ═══════════════════════════════════════════
+     MODAL: EVENT VIEW (read-only)
+════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modalEventView">
+<div class="modal" style="max-width:500px;padding:0;overflow:hidden">
+  <div id="evv-header" style="padding:20px 24px 16px;border-bottom:1px solid var(--border)">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span id="evv-type-pill" class="type-pill"></span>
+      <span id="evv-time" style="font-size:13px;color:var(--muted)"></span>
+    </div>
+    <div id="evv-partner" style="font-size:22px;font-weight:800;color:var(--text)"></div>
+    <div id="evv-location" style="font-size:13px;color:var(--muted);margin-top:4px"></div>
+  </div>
+  <div style="padding:18px 24px;display:flex;flex-direction:column;gap:16px">
+    <div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:8px">משתתפים</div>
+      <div id="evv-attendees" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+    </div>
+    <div id="evv-agenda-wrap">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:6px">אג׳נדה</div>
+      <div id="evv-agenda" style="font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap"></div>
+    </div>
+    <div id="evv-summary-wrap">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#16a34a;margin-bottom:6px">📝 סיכום פגישה</div>
+      <div id="evv-summary" style="font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap;background:#f0fdf4;border-radius:8px;padding:10px 12px"></div>
+    </div>
+  </div>
+  <div class="modal-actions" style="padding:14px 24px;border-top:1px solid var(--border);gap:10px">
+    <button class="btn btn-ghost" onclick="closeModal('modalEventView')">סגור</button>
+    <button class="btn btn-danger btn-sm" id="evv-delete-btn" onclick="">🗑 מחק</button>
+    <button class="btn btn-primary" id="evv-edit-btn" onclick="">✏️ ערוך</button>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════
      MODAL: TEAM MANAGEMENT
 ════════════════════════════════════════════ -->
 <div class="modal-overlay" id="modalTeam">
@@ -1561,7 +1596,7 @@ function renderMiniCard(e){
   const d = new Date(e.date+'T12:00:00');
   const dateStr = d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
   return `
-    <div class="mini-card ec-type-${e.type}" onclick="highlightCard('${e.id}')">
+    <div class="mini-card ec-type-${e.type}" onclick="openEventView('${e.id}')">
       <div class="mini-date">${dateStr}</div>
       <div class="mini-partner">${esc(e.partner)||'Untitled'} <span style="font-size:10px;color:var(--muted);font-weight:400">${tm.icon}</span></div>
       <div class="mini-loc">📍 ${esc(e.location)||'TBD'}</div>
@@ -1776,7 +1811,7 @@ function renderCalendar(){
                  (conf?` <span class="conf-day-badge">🎪 Day ${conf}</span>`:'');
     html+=`<div class="cal-all-day-cell">
       <div style="width:100%;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:${conf?'var(--accent)':'var(--muted)'};padding-bottom:${adEvs.length?4:0}px">${dayLabel}${badges}</div>
-      ${adEvs.map(e=>`<div class="cal-all-day-pill ec-type-${e.type}" onclick="openEventModal('${e.id}')" title="${esc(e.partner)}">${TYPE_META[e.type]?.icon||''} ${esc(e.partner)}</div>`).join('')}
+      ${adEvs.map(e=>`<div class="cal-all-day-pill ec-type-${e.type}" onclick="openEventView('${e.id}')" title="${esc(e.partner)}">${TYPE_META[e.type]?.icon||''} ${esc(e.partner)}</div>`).join('')}
     </div>`;
   });
 
@@ -1839,7 +1874,7 @@ function renderCalendar(){
       const timeLabel=(th%12||12)+':'+(tm<10?'0'+tm:tm)+(th<12?' AM':' PM');
       html+=`<div class="cal-event ec-type-${ev.type}"
         style="top:${top}px;height:${height}px;left:calc(${left}% + 4px);width:calc(${width}% - 8px)"
-        onclick="openEventModal('${ev.id}')" title="${esc(ev.partner)}${ev.location?' · '+ev.location:''}">
+        onclick="openEventView('${ev.id}')" title="${esc(ev.partner)}${ev.location?' · '+ev.location:''}">
         <div class="cal-event-time">${timeLabel}</div>
         <div class="cal-event-title">${TYPE_META[ev.type]?.icon||''} ${esc(ev.partner)}</div>
       </div>`;
@@ -1987,7 +2022,7 @@ function renderMobMySchedule(el,member){
       <div class="mob-day-label${isToday?' mob-today':''}">${label}${conf?` · יום ${conf} בכנס`:''}</div>`;
     evs.forEach(e=>{
       const tm=TYPE_META[e.type]||TYPE_META.other;
-      html+=`<div class="mob-event-row${e.summary?' has-summary':''}" onclick="openEventModal('${e.id}')">
+      html+=`<div class="mob-event-row${e.summary?' has-summary':''}" onclick="openEventView('${e.id}')">
         <div class="mob-event-time">${e.time?(fmtTime(e.time)+(e.timeEnd?'–'+fmtTime(e.timeEnd):'')):'TBD'}</div>
         <div class="mob-event-body">
           <div class="mob-event-title">${esc(e.partner)}</div>
@@ -2077,6 +2112,57 @@ function rebuildMemberChips(){
   team.forEach(m=>{
     bar.innerHTML += `<span class="chip member-chip ${isAll||filterMembers.has(m.id)?'active':''}" data-id="${m.id}" style="--chip-color:${m.color}" onclick="toggleMemberFilter('${m.id}')">${memberInitials(m.name)} ${esc(m.name)}</span>`;
   });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  EVENT VIEW (read-only)
+// ═══════════════════════════════════════════════════════════
+function openEventView(id){
+  const ev = events.find(e=>e.id===id);
+  if(!ev) return;
+  const tm = TYPE_META[ev.type]||TYPE_META.other;
+  const timeStr = ev.time ? (fmtTime(ev.time)+(ev.timeEnd?' – '+fmtTime(ev.timeEnd):'')) : 'זמן לא נקבע';
+  const d = ev.date ? new Date(ev.date+'T12:00:00').toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long'}) : '';
+
+  const pill = document.getElementById('evv-type-pill');
+  pill.className = `type-pill type-${ev.type}`;
+  pill.textContent = tm.icon+' '+tm.label;
+
+  document.getElementById('evv-time').textContent = (d?d+' · ':'')+timeStr;
+  document.getElementById('evv-partner').textContent = ev.partner||'ללא שם';
+  const loc = document.getElementById('evv-location');
+  loc.style.display = ev.location ? '' : 'none';
+  loc.textContent = ev.location ? '📍 '+ev.location : '';
+
+  // Attendees
+  const attEl = document.getElementById('evv-attendees');
+  if(ev.attendees&&ev.attendees.length){
+    attEl.innerHTML = ev.attendees.map(mid=>{
+      const m=getMember(mid);
+      if(!m) return '';
+      return `<span class="attendee-chip" style="--ac:${m.color}"><span class="attendee-dot" style="background:${m.color}"></span>${m.name}</span>`;
+    }).join('');
+  } else {
+    attEl.innerHTML='<span style="color:var(--muted);font-size:13px">לא שויכו משתתפים</span>';
+  }
+
+  // Agenda
+  const agWrap = document.getElementById('evv-agenda-wrap');
+  const agEl = document.getElementById('evv-agenda');
+  agWrap.style.display = ev.agenda ? '' : 'none';
+  agEl.textContent = ev.agenda||'';
+
+  // Summary
+  const sumWrap = document.getElementById('evv-summary-wrap');
+  const sumEl = document.getElementById('evv-summary');
+  sumWrap.style.display = ev.summary ? '' : 'none';
+  sumEl.textContent = ev.summary||'';
+
+  // Action buttons
+  document.getElementById('evv-edit-btn').onclick = ()=>{ closeModal('modalEventView'); openEventModal(id); };
+  document.getElementById('evv-delete-btn').onclick = ()=>{ closeModal('modalEventView'); deleteEvent(id); };
+
+  openModal('modalEventView');
 }
 
 // ═══════════════════════════════════════════════════════════
