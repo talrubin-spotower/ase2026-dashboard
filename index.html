@@ -654,7 +654,7 @@ textarea{resize:vertical;min-height:80px}
       <span class="nav-icon">📋</span> Guidelines
     </button>
     <button class="nav-item" data-tab="mytasks" onclick="switchTab('mytasks')" id="navMyTasks" style="display:none">
-      <span class="nav-icon">✅</span> משימות אישיות
+      <span class="nav-icon">✅</span> My Tasks
     </button>
   </nav>
   <div class="sidebar-footer" id="sidebarFooter"></div>
@@ -1370,7 +1370,7 @@ function renderMyTasks(){
   const el = document.getElementById('myTasksContent');
   const me = getMyMember();
   if(!me){
-    el.innerHTML=`<div style="padding:60px;text-align:center;color:var(--muted)">לא ניתן לזהות את המשתמש המחובר.</div>`;
+    el.innerHTML=`<div style="padding:60px;text-align:center;color:var(--muted)">Could not identify the logged-in user.</div>`;
     return;
   }
   const myEvs = events.filter(e=>(e.attendees||[]).includes(me.id))
@@ -1380,52 +1380,52 @@ function renderMyTasks(){
   let html=`<div style="padding:24px 28px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
       <div>
-        <h2 style="margin:0;font-size:20px;font-weight:800;color:var(--text)">✅ משימות אישיות</h2>
-        <div style="color:var(--muted);font-size:13px;margin-top:3px">${esc(me.name)} · ${myEvs.length} פגישות בלוז</div>
+        <h2 style="margin:0;font-size:20px;font-weight:800;color:var(--text)">✅ My Tasks</h2>
+        <div style="color:var(--muted);font-size:13px;margin-top:3px">${esc(me.name)} · ${myEvs.length} meetings</div>
       </div>
-      <button class="btn btn-primary" onclick="exportMySchedule()" style="gap:6px">📄 ייצא לוז מלא</button>
+      <button class="btn btn-primary" onclick="exportMySchedule()" style="gap:6px">📄 Export Full Schedule</button>
     </div>`;
 
   // ── Section 1: Needs completion ──
   html+=`<div style="margin-bottom:28px">
     <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:${needsWork.length?'#dc2626':'#16a34a'};margin-bottom:10px">
-      ${needsWork.length?`⚠️ פגישות לצורת השלמה (${needsWork.length})`:'✅ כל הפגישות מלאות — כל הכבוד!'}
+      ${needsWork.length?`⚠️ Needs Completion (${needsWork.length})`:'✅ All meetings complete — great job!'}
     </div>`;
   if(needsWork.length){
     needsWork.forEach(e=>{
       const tm=TYPE_META[e.type]||TYPE_META.other;
       const missing=[];
-      if(!e.agenda)   missing.push('אג׳נדה');
-      if(!e.location) missing.push('מיקום');
-      const dateStr=e.date?new Date(e.date+'T12:00:00').toLocaleDateString('he-IL',{weekday:'short',day:'numeric',month:'short'}):'';
+      if(!e.agenda)   missing.push('Agenda');
+      if(!e.location) missing.push('Location');
+      const dateStr=e.date?new Date(e.date+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}):'';
       html+=`<div style="background:#fff;border:1px solid #fca5a5;border-right:4px solid #dc2626;border-radius:10px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px">
         <div style="flex:1">
           <div style="font-weight:700;font-size:14px">${esc(e.partner)}</div>
           <div style="font-size:12px;color:var(--muted);margin-top:2px">${tm.icon} ${tm.label} · ${dateStr}${e.time?' · '+fmtTime(e.time):''}</div>
           <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
-            ${missing.map(m=>`<span style="background:#fee2e2;color:#dc2626;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px">חסר: ${m}</span>`).join('')}
+            ${missing.map(m=>`<span style="background:#fee2e2;color:#dc2626;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px">Missing: ${m}</span>`).join('')}
           </div>
         </div>
-        <button class="btn btn-primary btn-sm" onclick="openEventModal('${e.id}')">✏️ השלם</button>
+        <button class="btn btn-primary btn-sm" onclick="openEventModal('${e.id}')">✏️ Complete</button>
       </div>`;
     });
   } else {
     html+=`<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:10px">
       <span style="font-size:22px">🎉</span>
-      <span style="font-weight:600;color:#16a34a;font-size:14px">כל הפגישות כוללות אג׳נדה ומיקום</span>
+      <span style="font-weight:600;color:#16a34a;font-size:14px">All meetings include agenda and location</span>
     </div>`;
   }
   html+=`</div>`;
 
   // ── Section 2: All events ──
   html+=`<div>
-    <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:12px">📅 כל הפגישות (${myEvs.length})</div>`;
+    <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:12px">📅 All Meetings (${myEvs.length})</div>`;
   let lastDate='';
   myEvs.forEach(e=>{
     const tm=TYPE_META[e.type]||TYPE_META.other;
     if(e.date!==lastDate){
       if(lastDate) html+=`</div>`;
-      const dl=e.date?new Date(e.date+'T12:00:00').toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long'}):'';
+      const dl=e.date?new Date(e.date+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}):'';
       html+=`<div style="margin-bottom:16px">
         <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--accent);border-bottom:1px solid var(--border);padding-bottom:4px;margin-bottom:8px">${dl}</div>`;
       lastDate=e.date;
@@ -1436,12 +1436,12 @@ function renderMyTasks(){
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
           <span class="type-pill type-${e.type}" style="font-size:10px">${tm.icon} ${tm.label}</span>
-          <span style="font-size:12px;color:var(--muted)">${e.time?(fmtTime(e.time)+(e.timeEnd?' – '+fmtTime(e.timeEnd):'')):'שעה TBD'}</span>
+          <span style="font-size:12px;color:var(--muted)">${e.time?(fmtTime(e.time)+(e.timeEnd?' – '+fmtTime(e.timeEnd):'')):'Time TBD'}</span>
         </div>
         <div style="font-weight:700;font-size:15px;margin-bottom:3px">${esc(e.partner)}</div>
-        <div style="font-size:12px;color:${e.location?'var(--muted)':'#dc2626'}">📍 ${esc(e.location)||'מיקום חסר'}</div>
+        <div style="font-size:12px;color:${e.location?'var(--muted)':'#dc2626'}">📍 ${esc(e.location)||'Location TBD'}</div>
         ${attHtml?`<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px">${attHtml}</div>`:''}
-        ${e.agenda?`<div style="margin-top:7px;font-size:12px;color:var(--text);background:var(--bg);border-radius:6px;padding:6px 10px;line-height:1.6">📋 ${esc(e.agenda)}</div>`:`<div style="margin-top:5px;font-size:11px;color:#dc2626">📋 אג׳נדה חסרה</div>`}
+        ${e.agenda?`<div style="margin-top:7px;font-size:12px;color:var(--text);background:var(--bg);border-radius:6px;padding:6px 10px;line-height:1.6">📋 ${esc(e.agenda)}</div>`:`<div style="margin-top:5px;font-size:11px;color:#dc2626">📋 No agenda</div>`}
         ${e.summary?`<div style="margin-top:5px;font-size:12px;background:#f0fdf4;border-radius:6px;padding:6px 10px;color:#16a34a">📝 ${esc(e.summary)}</div>`:''}
       </div>
       <button class="btn btn-ghost btn-xs" onclick="openEventModal('${e.id}')" style="flex-shrink:0">✏️</button>
@@ -1461,15 +1461,15 @@ function exportMySchedule(){
   myEvs.forEach(e=>{ if(!groups[e.date])groups[e.date]=[]; groups[e.date].push(e); });
   let body='';
   Object.entries(groups).sort(([a],[b])=>a.localeCompare(b)).forEach(([date,evs])=>{
-    const dl=new Date(date+'T12:00:00').toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    const dl=new Date(date+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
     body+=`<div class="day"><h2>${dl}</h2>`;
     evs.forEach(e=>{
       const tm=TYPE_META[e.type]||TYPE_META.other;
-      const timeStr=e.time?(fmtTime(e.time)+(e.timeEnd?' – '+fmtTime(e.timeEnd):'')):'זמן לא נקבע';
+      const timeStr=e.time?(fmtTime(e.time)+(e.timeEnd?' – '+fmtTime(e.timeEnd):'')):'Time TBD';
       const attNames=(e.attendees||[]).map(id=>{const m=getMember(id);return m?m.name:'';}).filter(Boolean).join(', ');
       const missingBadges=[];
-      if(!e.agenda)   missingBadges.push('אג׳נדה חסרה');
-      if(!e.location) missingBadges.push('מיקום חסר');
+      if(!e.agenda)   missingBadges.push('Missing Agenda');
+      if(!e.location) missingBadges.push('Missing Location');
       body+=`<div class="ev">
         <div class="ev-head">
           <span class="ev-type">${tm.icon} ${tm.label}</span>
@@ -1477,19 +1477,19 @@ function exportMySchedule(){
           ${missingBadges.map(b=>`<span class="badge-missing">${b}</span>`).join('')}
         </div>
         <div class="ev-name">${esc(e.partner)}</div>
-        <div class="ev-loc">📍 ${esc(e.location)||'מיקום לא נקבע'}</div>
+        <div class="ev-loc">📍 ${esc(e.location)||'Location TBD'}</div>
         ${attNames?`<div class="ev-att">👥 ${esc(attNames)}</div>`:''}
-        ${e.agenda?`<div class="ev-block agenda"><strong>📋 אג׳נדה</strong><br>${nl2br(esc(e.agenda))}</div>`:''}
-        ${e.summary?`<div class="ev-block summary"><strong>📝 סיכום פגישה</strong><br>${nl2br(esc(e.summary))}</div>`:''}
+        ${e.agenda?`<div class="ev-block agenda"><strong>📋 Agenda</strong><br>${nl2br(esc(e.agenda))}</div>`:''}
+        ${e.summary?`<div class="ev-block summary"><strong>📝 Meeting Summary</strong><br>${nl2br(esc(e.summary))}</div>`:''}
       </div>`;
     });
     body+=`</div>`;
   });
-  const html=`<!DOCTYPE html><html dir="rtl" lang="he"><head><meta charset="utf-8">
-<title>לוז ASE 2026 – ${esc(me.name)}</title>
+  const html=`<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<title>ASE 2026 Schedule – ${esc(me.name)}</title>
 <style>
   *{box-sizing:border-box}
-  body{font-family:Arial,sans-serif;max-width:800px;margin:0 auto;padding:36px 24px;color:#111;direction:rtl;background:#fff}
+  body{font-family:Arial,sans-serif;max-width:800px;margin:0 auto;padding:36px 24px;color:#111;background:#fff}
   h1{font-size:26px;font-weight:900;color:#04539f;margin:0 0 4px}
   .subtitle{color:#666;font-size:13px;margin-bottom:32px}
   h2{font-size:15px;font-weight:800;background:#f0f6ff;color:#04539f;padding:7px 14px;border-radius:8px;margin:24px 0 10px}
@@ -1506,10 +1506,10 @@ function exportMySchedule(){
   .footer{margin-top:40px;font-size:11px;color:#aaa;text-align:center;border-top:1px solid #eee;padding-top:16px}
   @media print{body{padding:10px}.ev{page-break-inside:avoid}}
 </style></head><body>
-  <h1>ASE 2026 – לוז אישי</h1>
-  <div class="subtitle">${esc(me.name)} · ${myEvs.length} פגישות · Affiliate Summit East · יולי–אוגוסט 2026 · NYC</div>
+  <h1>ASE 2026 – Personal Schedule</h1>
+  <div class="subtitle">${esc(me.name)} · ${myEvs.length} meetings · Affiliate Summit East · Jul–Aug 2026 · NYC</div>
   ${body}
-  <div class="footer">הופק מ-ASE 2026 Team Dashboard · ${new Date().toLocaleDateString('he-IL')}</div>
+  <div class="footer">Generated by ASE 2026 Team Dashboard · ${new Date().toLocaleDateString('en-US')}</div>
 </body></html>`;
   const w=window.open('','_blank');
   w.document.write(html);
