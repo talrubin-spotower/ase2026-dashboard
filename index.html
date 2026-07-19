@@ -2073,7 +2073,8 @@ function render(){
 // ═══════════════════════════════════════════════════════════
 const MOB_KEY='ase26_my_member';
 let mobTab='my';
-let mobViewingMember=null; // for team tab
+let mobViewingMember=null;       // legacy single-view
+let mobSelectedMembers=new Set(); // multi-select team view
 
 function isMobile(){ return window.innerWidth<=768; }
 
@@ -2214,34 +2215,78 @@ function renderMobMySchedule(el,member){
 }
 
 function renderMobTeam(el){
-  const viewing=mobViewingMember||null;
-  // Team chips
-  let html=`<div class="mob-team-picker-row">`;
+  const sel=mobSelectedMembers;
+  let html=`<div class="mob-team-picker-row" style="flex-wrap:wrap;gap:8px;padding:14px 14px 10px">`;
   team.forEach(m=>{
-    const active=viewing&&viewing.id===m.id;
-    html+=`<button class="mob-team-chip${active?' active':''}" onclick="mobViewTeamMember('${m.id}')"
-      style="${active?'':''}">
-      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${m.color};margin-right:5px"></span>
+    const active=sel.has(m.id);
+    html+=`<button class="mob-team-chip${active?' active':''}" onclick="mobToggleTeamMember('${m.id}')"
+      style="${active?`background:${m.color};color:#fff;border-color:${m.color}`:''}">
+      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${active?'rgba(255,255,255,.7)':m.color};margin-right:5px"></span>
       ${esc(m.name.split(' ')[0])}
     </button>`;
   });
   html+=`</div>`;
-  if(!viewing){
-    html+=`<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px">בחר חבר צוות</div>`;
+  if(sel.size===0){
+    html+=`<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px">Tap one or more team members to view their schedule</div>`;
+    el.innerHTML=html;
   } else {
-    // Render their schedule (read-only)
-    const saved=mobViewingMember;
     html+=`<div id="mob-team-sched"></div>`;
     el.innerHTML=html;
-    renderMobMySchedule(document.getElementById('mob-team-sched'),saved);
-    return;
+    renderMobMultiSchedule(document.getElementById('mob-team-sched'), [...sel]);
   }
-  el.innerHTML=html;
 }
 
-function mobViewTeamMember(id){
-  mobViewingMember=team.find(m=>m.id===id)||null;
+function mobToggleTeamMember(id){
+  if(mobSelectedMembers.has(id)) mobSelectedMembers.delete(id);
+  else mobSelectedMembers.add(id);
   renderMobTeam(document.getElementById('mob-schedule-view'));
+}
+
+function renderMobMultiSchedule(el, memberIds){
+  const members=memberIds.map(id=>team.find(m=>m.id===id)).filter(Boolean);
+  const myEvents=events.filter(e=>(e.attendees||[]).some(id=>memberIds.includes(id)))
+    .sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||''));
+  const groups={};
+  myEvents.forEach(e=>(groups[e.date]=groups[e.date]||[]).push(e));
+  const today=new Date();
+  const CONF={'2026-07-27':1,'2026-07-28':2};
+  // Header: selected members
+  let html=`<div style="display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px 6px">
+    ${members.map(m=>`<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;background:${m.color}22;color:${m.color};padding:3px 10px;border-radius:12px;border:1px solid ${m.color}55">
+      <span style="width:7px;height:7px;border-radius:50%;background:${m.color};display:inline-block"></span>${m.name.split(' ')[0]}
+    </span>`).join('')}
+  </div>`;
+  if(!myEvents.length){ html+=`<div style="text-align:center;padding:40px;color:var(--muted)">No events found</div>`; el.innerHTML=html; return; }
+  html+=`<div class="mob-schedule">`;
+  Object.entries(groups).sort(([a],[b])=>a.localeCompare(b)).forEach(([date,evs])=>{
+    const d=new Date(date+'T12:00:00');
+    const isToday=d.toDateString()===today.toDateString();
+    const conf=CONF[date];
+    const label=d.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+    html+=`<div class="mob-day-group">
+      <div class="mob-day-label${isToday?' mob-today':''}">${label}${conf?` · Conference Day ${conf}`:''}</div>`;
+    evs.forEach(e=>{
+      const tm=TYPE_META[e.type]||TYPE_META.other;
+      // Dots showing which selected members attend this event
+      const dots=members.filter(m=>(e.attendees||[]).includes(m.id))
+        .map(m=>`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${m.color}" title="${m.name}"></span>`)
+        .join('');
+      html+=`<div class="mob-event-row${e.summary?' has-summary':''}" onclick="openEventView('${e.id}')">
+        <div class="mob-event-time">${e.time?(fmtTime(e.time)+(e.timeEnd?'–'+fmtTime(e.timeEnd):'')):'TBD'}</div>
+        <div class="mob-event-body">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+            <span class="mob-event-title" style="margin:0">${esc(e.partner)}</span>
+            <span style="display:flex;gap:3px;align-items:center">${dots}</span>
+          </div>
+          <div class="mob-event-sub">${tm.icon} ${tm.label}${e.location?' · '+esc(e.location):''}</div>
+        </div>
+        ${e.summary?'<div class="mob-summary-dot"></div>':''}
+      </div>`;
+    });
+    html+=`</div>`;
+  });
+  html+=`</div>`;
+  el.innerHTML=html;
 }
 
 function renderMobFlights(el){
