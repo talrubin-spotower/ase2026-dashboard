@@ -656,6 +656,9 @@ textarea{resize:vertical;min-height:80px}
     <button class="nav-item" data-tab="mytasks" onclick="switchTab('mytasks')" id="navMyTasks" style="display:none">
       <span class="nav-icon">✅</span> My Tasks
     </button>
+    <button class="nav-item" data-tab="warrisk" onclick="switchTab('warrisk')">
+      <span class="nav-icon">⚠️</span> War Risk
+    </button>
   </nav>
   <div class="sidebar-footer" id="sidebarFooter"></div>
 </aside>
@@ -760,6 +763,37 @@ textarea{resize:vertical;min-height:80px}
 <!-- MY TASKS TAB -->
 <div id="tab-mytasks" style="display:none">
   <div id="myTasksContent" style="padding:0"></div>
+</div>
+
+<!-- WAR RISK TAB -->
+<div id="tab-warrisk" style="display:none;height:100%;flex-direction:column">
+  <div style="padding:16px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+    <div>
+      <span style="font-size:16px;font-weight:800;color:var(--text)">⚠️ War Risk Monitor</span>
+      <span style="font-size:12px;color:var(--muted);margin-right:10px">Iran Strike Probability · Live</span>
+    </div>
+    <a href="https://usstrikeradar.com/" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">↗ Open in new tab</a>
+  </div>
+  <div style="flex:1;position:relative;min-height:0">
+    <iframe id="warRiskFrame" src="https://usstrikeradar.com/"
+      style="width:100%;height:100%;border:none;display:block;min-height:calc(100vh - 120px)"
+      allow="*" loading="lazy"
+      onload="document.getElementById('warRiskFallback').style.display='none'"
+      onerror="document.getElementById('warRiskFallback').style.display='flex'">
+    </iframe>
+    <!-- Fallback shown if iframe is blocked -->
+    <div id="warRiskFallback" style="display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;gap:20px;background:var(--bg);padding:40px;text-align:center">
+      <div style="font-size:48px">⚠️</div>
+      <div style="font-size:20px;font-weight:800;color:var(--text)">Embedded view blocked</div>
+      <div style="font-size:14px;color:var(--muted);max-width:360px;line-height:1.6">
+        The site doesn't allow embedding. Open it directly to see live Iran strike probability, news signals, aviation data, and Polymarket odds.
+      </div>
+      <a href="https://usstrikeradar.com/" target="_blank" rel="noopener"
+        style="padding:12px 28px;background:var(--accent);color:#fff;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none">
+        Open Strike Radar →
+      </a>
+    </div>
+  </div>
 </div>
 
 </div><!-- /tab-wrap -->
@@ -1341,8 +1375,9 @@ function clearDateFilter(){
 //  SIDEBAR TAB SWITCHING
 // ═══════════════════════════════════════════════════════════
 function switchTab(tab){
-  ['calendar','flights','guidelines','mytasks'].forEach(t=>{
-    document.getElementById('tab-'+t).style.display = t===tab?'':'none';
+  ['calendar','flights','guidelines','mytasks','warrisk'].forEach(t=>{
+    const el=document.getElementById('tab-'+t);
+    el.style.display = t===tab?(t==='warrisk'?'flex':''):'none';
   });
   document.querySelectorAll('.nav-item').forEach(b=>{
     b.classList.toggle('active', b.dataset.tab===tab);
